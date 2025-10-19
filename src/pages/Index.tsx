@@ -1,67 +1,139 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ReturnCard, ReturnItem } from "@/components/ReturnCard";
 import { AddReturnDialog } from "@/components/AddReturnDialog";
 import { ReturnDetailDialog } from "@/components/ReturnDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Receipt } from "lucide-react";
+import { Package, Receipt, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import type { ReturnItem as DBReturnItem } from "@/types/database";
 
 const Index = () => {
-  const [returns, setReturns] = useState<ReturnItem[]>([
-    {
-      id: "1",
-      storeName: "Amazon",
-      purchaseDate: new Date(2025, 0, 15),
-      returnDate: new Date(2025, 1, 15),
-      price: 89.99,
-      status: "pending",
-      refundReceived: false,
-    },
-    {
-      id: "2",
-      storeName: "Target",
-      purchaseDate: new Date(2024, 11, 20),
-      returnDate: new Date(2025, 0, 20),
-      price: 45.50,
-      status: "completed",
-      refundReceived: true,
-    },
-  ]);
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [returns, setReturns] = useState<ReturnItem[]>([]);
   const [selectedReturn, setSelectedReturn] = useState<ReturnItem | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [fetchLoading, setFetchLoading] = useState(true);
 
-  const handleAddReturn = (newReturn: Omit<ReturnItem, "id">) => {
-    const returnWithId = {
-      ...newReturn,
-      id: Date.now().toString(),
-    };
-    setReturns([returnWithId, ...returns]);
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchReturns();
+    }
+  }, [user]);
+
+  const fetchReturns = async () => {
+    setFetchLoading(true);
+    const { data, error } = await supabase
+      .from('returns')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error('Failed to load returns');
+      console.error(error);
+    } else {
+      const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
+        id: item.id,
+        storeName: item.store_name,
+        purchaseDate: new Date(item.purchase_date),
+        returnDate: new Date(item.return_date),
+        price: Number(item.amount),
+        receiptImage: item.receipt_image,
+        status: item.refund_received ? "completed" : "pending",
+        refundReceived: item.refund_received,
+      }));
+      setReturns(transformedReturns);
+    }
+    setFetchLoading(false);
   };
 
-  const handleToggleRefund = (id: string) => {
-    setReturns(
-      returns.map((item) =>
-        item.id === id ? { ...item, refundReceived: !item.refundReceived } : item
-      )
-    );
-    toast.success("Refund status updated");
+  const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('returns')
+      .insert({
+        user_id: user.id,
+        store_name: newReturn.storeName,
+        item_name: newReturn.storeName, // Using store name as item name for now
+        amount: newReturn.price,
+        purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
+        return_date: newReturn.returnDate.toISOString().split('T')[0],
+        receipt_image: newReturn.receiptImage,
+        refund_received: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error('Failed to add return');
+      console.error(error);
+    } else {
+      await fetchReturns();
+      toast.success('Return added successfully!');
+    }
   };
 
-  const handleMarkComplete = (id: string) => {
-    setReturns(
-      returns.map((item) =>
-        item.id === id ? { ...item, status: "completed" as const } : item
-      )
-    );
-    setSelectedReturn(null);
-    toast.success("Return marked as complete!");
+  const handleToggleRefund = async (id: string) => {
+    const returnItem = returns.find(r => r.id === id);
+    if (!returnItem) return;
+
+    const { error } = await supabase
+      .from('returns')
+      .update({ refund_received: !returnItem.refundReceived })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to update refund status');
+    } else {
+      await fetchReturns();
+      toast.success("Refund status updated");
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setReturns(returns.filter((item) => item.id !== id));
-    setSelectedReturn(null);
-    toast.success("Return deleted");
+  const handleMarkComplete = async (id: string) => {
+    const { error } = await supabase
+      .from('returns')
+      .update({ refund_received: true })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to mark as complete');
+    } else {
+      await fetchReturns();
+      setSelectedReturn(null);
+      toast.success("Return marked as complete!");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from('returns')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to delete return');
+    } else {
+      await fetchReturns();
+      setSelectedReturn(null);
+      toast.success("Return deleted");
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   const filteredReturns = returns.filter((item) => {
@@ -73,6 +145,17 @@ const Index = () => {
   const totalAmount = returns
     .filter((r) => r.status === "pending")
     .reduce((sum, r) => sum + r.price, 0);
+
+  if (loading || fetchLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Receipt className="w-16 h-16 mx-auto text-primary mb-4 animate-pulse" />
+          <p className="text-muted-foreground">Loading your returns...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +172,17 @@ const Index = () => {
                 <p className="text-sm text-primary-foreground/80">Track your returns effortlessly</p>
               </div>
             </div>
-            <AddReturnDialog onAdd={handleAddReturn} />
+            <div className="flex items-center gap-2">
+              <AddReturnDialog onAdd={handleAddReturn} />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                className="text-primary-foreground hover:bg-white/10"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>

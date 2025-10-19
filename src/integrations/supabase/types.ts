@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      returns: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          item_name: string
+          notes: string | null
+          purchase_date: string
+          receipt_image: string | null
+          refund_received: boolean
+          return_date: string
+          store_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          purchase_date: string
+          receipt_image?: string | null
+          refund_received?: boolean
+          return_date: string
+          store_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          purchase_date?: string
+          receipt_image?: string | null
+          refund_received?: boolean
+          return_date?: string
+          store_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
