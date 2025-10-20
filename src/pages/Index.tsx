@@ -47,6 +47,7 @@ const Index = () => {
         storeName: item.store_name,
         purchaseDate: new Date(item.purchase_date),
         returnDate: new Date(item.return_date),
+        returnedDate: item.returned_date ? new Date(item.returned_date) : null,
         price: Number(item.amount),
         receiptImage: item.receipt_image,
         status: item.refund_received ? "completed" : "pending",
@@ -128,6 +129,20 @@ const Index = () => {
       await fetchReturns();
       setSelectedReturn(null);
       toast.success("Return deleted");
+    }
+  };
+
+  const handleMarkReturned = async (id: string, date: Date) => {
+    const { error } = await supabase
+      .from('returns')
+      .update({ returned_date: date.toISOString().split('T')[0] })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to mark as returned');
+    } else {
+      await fetchReturns();
+      toast.success("Marked as returned!");
     }
   };
 
@@ -249,6 +264,7 @@ const Index = () => {
         onOpenChange={(open) => !open && setSelectedReturn(null)}
         onToggleRefund={handleToggleRefund}
         onMarkComplete={handleMarkComplete}
+        onMarkReturned={handleMarkReturned}
         onDelete={handleDelete}
       />
     </div>

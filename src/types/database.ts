@@ -6,6 +6,7 @@ export interface ReturnItem {
   amount: number;
   purchase_date: string;
   return_date: string;
+  returned_date: string | null;
   receipt_image: string | null;
   refund_received: boolean;
   notes: string | null;

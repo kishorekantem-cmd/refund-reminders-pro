@@ -11,6 +11,7 @@ interface ReturnDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onToggleRefund: (id: string) => void;
   onMarkComplete: (id: string) => void;
+  onMarkReturned: (id: string, date: Date) => void;
   onDelete: (id: string) => void;
 }
 
@@ -20,9 +21,16 @@ export const ReturnDetailDialog = ({
   onOpenChange,
   onToggleRefund,
   onMarkComplete,
+  onMarkReturned,
   onDelete,
 }: ReturnDetailDialogProps) => {
   if (!item) return null;
+
+  const daysSinceReturned = item.returnedDate 
+    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const needsRefundReminder = item.returnedDate && !item.refundReceived && daysSinceReturned !== null && daysSinceReturned >= 3;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,6 +83,18 @@ export const ReturnDetailDialog = ({
               </p>
             </div>
 
+            {item.returnedDate && (
+              <div className="p-4 rounded-lg bg-secondary/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-success" />
+                  <span className="text-sm font-medium">Actually Returned On</span>
+                </div>
+                <p className="text-lg font-semibold">
+                  {format(item.returnedDate, "MMMM d, yyyy")}
+                </p>
+              </div>
+            )}
+
             <div className="p-4 rounded-lg bg-accent/10">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-accent" />
@@ -96,7 +116,7 @@ export const ReturnDetailDialog = ({
               </div>
             )}
 
-            <div className="p-4 rounded-lg bg-secondary/50">
+            <div className={`p-4 rounded-lg ${needsRefundReminder ? 'bg-warning/10 border border-warning' : 'bg-secondary/50'}`}>
               <p className="text-sm font-medium mb-2">Refund Status</p>
               <div className="flex items-center gap-2">
                 {item.refundReceived ? (
@@ -108,12 +128,26 @@ export const ReturnDetailDialog = ({
                   {item.refundReceived ? "Refund Confirmed" : "Refund Pending"}
                 </span>
               </div>
+              {needsRefundReminder && (
+                <p className="text-xs text-warning font-medium mt-2">
+                  ⚠️ {daysSinceReturned} days since return - Check if refund received!
+                </p>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
             {item.status === "pending" && (
               <>
+                {!item.returnedDate && (
+                  <Button
+                    onClick={() => onMarkReturned(item.id, new Date())}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Mark as Returned Today
+                  </Button>
+                )}
                 <Button
                   onClick={() => onToggleRefund(item.id)}
                   variant="outline"

@@ -8,6 +8,7 @@ export interface ReturnItem {
   storeName: string;
   purchaseDate: Date;
   returnDate: Date;
+  returnedDate?: Date | null;
   price: number;
   receiptImage?: string;
   status: "pending" | "completed";
@@ -24,9 +25,15 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
     (item.returnDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  const daysSinceReturned = item.returnedDate 
+    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const needsRefundReminder = item.returnedDate && !item.refundReceived && daysSinceReturned !== null && daysSinceReturned >= 3;
+
   return (
     <Card
-      className="p-4 cursor-pointer hover:shadow-lg transition-all duration-300 bg-gradient-card border-border"
+      className={`p-4 cursor-pointer hover:shadow-lg transition-all duration-300 bg-gradient-card border-border ${needsRefundReminder ? 'border-l-4 border-l-warning' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between mb-3">
@@ -81,11 +88,19 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
 
       {item.status === "pending" && (
         <div className="mt-3 pt-3 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            {item.refundReceived
-              ? "✓ Refund confirmed"
-              : "Waiting for refund confirmation"}
-          </p>
+          {needsRefundReminder ? (
+            <p className="text-xs text-warning font-medium">
+              ⚠️ Reminder: Check if refund received ({daysSinceReturned} days since return)
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {item.refundReceived
+                ? "✓ Refund confirmed"
+                : item.returnedDate
+                ? `Returned ${format(item.returnedDate, "MMM d, yyyy")} - Waiting for refund`
+                : "Waiting for refund confirmation"}
+            </p>
+          )}
         </div>
       )}
     </Card>

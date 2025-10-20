@@ -49,6 +49,7 @@ export type Database = {
           receipt_image: string | null
           refund_received: boolean
           return_date: string
+          returned_date: string | null
           store_name: string
           updated_at: string
           user_id: string
@@ -63,6 +64,7 @@ export type Database = {
           receipt_image?: string | null
           refund_received?: boolean
           return_date: string
+          returned_date?: string | null
           store_name: string
           updated_at?: string
           user_id: string
@@ -77,6 +79,7 @@ export type Database = {
           receipt_image?: string | null
           refund_received?: boolean
           return_date?: string
+          returned_date?: string | null
           store_name?: string
           updated_at?: string
           user_id?: string
