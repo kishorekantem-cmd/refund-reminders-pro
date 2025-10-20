@@ -17,6 +17,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     storeName: "",
     purchaseDate: "",
     returnDate: "",
+    returnedDate: "",
     price: "",
     receiptImage: "",
   });
@@ -41,6 +42,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       storeName: formData.storeName,
       purchaseDate: new Date(formData.purchaseDate),
       returnDate: new Date(formData.returnDate),
+      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
       status: "pending",
@@ -51,6 +53,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       storeName: "",
       purchaseDate: "",
       returnDate: "",
+      returnedDate: "",
       price: "",
       receiptImage: "",
     });
@@ -105,20 +108,30 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="returnDate">Return By *</Label>
-              <Input
-                id="returnDate"
-                type="date"
-                value={formData.returnDate}
-                onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label htmlFor="price">Item Price *</Label>
+            <Label htmlFor="returnDate">Return By *</Label>
+            <Input
+              id="returnDate"
+              type="date"
+              value={formData.returnDate}
+              onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="returnedDate">Date Returned (Optional)</Label>
+          <Input
+            id="returnedDate"
+            type="date"
+            value={formData.returnedDate}
+            onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="price">Item Price *</Label>
             <Input
               id="price"
               type="number"
