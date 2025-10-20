@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Store, CheckCircle2, XCircle } from "lucide-react";
+import { Calendar, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ReturnItem } from "./ReturnCard";
 
@@ -12,6 +12,7 @@ interface ReturnDetailDialogProps {
   onToggleRefund: (id: string) => void;
   onMarkComplete: (id: string) => void;
   onMarkReturned: (id: string, date: Date) => void;
+  onEdit: (item: ReturnItem) => void;
   onDelete: (id: string) => void;
 }
 
@@ -22,6 +23,7 @@ export const ReturnDetailDialog = ({
   onToggleRefund,
   onMarkComplete,
   onMarkReturned,
+  onEdit,
   onDelete,
 }: ReturnDetailDialogProps) => {
   if (!item) return null;
@@ -163,6 +165,17 @@ export const ReturnDetailDialog = ({
                 </Button>
               </>
             )}
+            <Button
+              onClick={() => {
+                onEdit(item);
+                onOpenChange(false);
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Return
+            </Button>
             <Button
               onClick={() => onDelete(item.id)}
               variant="destructive"

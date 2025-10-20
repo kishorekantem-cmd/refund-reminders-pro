@@ -1,29 +1,47 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 
-interface AddReturnDialogProps {
-  onAdd: (item: Omit<ReturnItem, "id">) => void;
+interface EditReturnDialogProps {
+  item: ReturnItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (id: string, data: Partial<ReturnItem>) => void;
 }
 
-export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
-  const [open, setOpen] = useState(false);
+export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
     returnDate: "",
+    returnedDate: "",
     price: "",
     receiptImage: "",
   });
 
+  useEffect(() => {
+    if (item) {
+      setFormData({
+        storeName: item.storeName,
+        purchaseDate: item.purchaseDate.toISOString().split('T')[0],
+        returnDate: item.returnDate.toISOString().split('T')[0],
+        returnedDate: item.returnedDate ? item.returnedDate.toISOString().split('T')[0] : "",
+        price: item.price.toString(),
+        receiptImage: item.receiptImage || "",
+      });
+    }
+  }, [item]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!item) return;
+
     if (!formData.storeName || !formData.purchaseDate || !formData.returnDate || !formData.price) {
       toast.error("Please fill in all required fields");
       return;
@@ -37,25 +55,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       return;
     }
 
-    onAdd({
+    onSave(item.id, {
       storeName: formData.storeName,
       purchaseDate: new Date(formData.purchaseDate),
       returnDate: new Date(formData.returnDate),
+      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
-      status: "pending",
-      refundReceived: false,
     });
 
-    setFormData({
-      storeName: "",
-      purchaseDate: "",
-      returnDate: "",
-      price: "",
-      receiptImage: "",
-    });
-    setOpen(false);
-    toast.success("Return added successfully!");
+    onOpenChange(false);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,17 +78,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     }
   };
 
+  if (!item) return null;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-md">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Return
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Return</DialogTitle>
+          <DialogTitle>Edit Return</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -115,6 +120,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="returnedDate">Returned On</Label>
+            <Input
+              id="returnedDate"
+              type="date"
+              value={formData.returnedDate}
+              onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
+            />
           </div>
 
           <div className="space-y-2">
@@ -156,9 +171,14 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             )}
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-            Add Return
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full">
+              Cancel
+            </Button>
+            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+              Save Changes
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

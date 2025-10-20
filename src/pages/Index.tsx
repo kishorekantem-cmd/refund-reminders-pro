@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ReturnCard, ReturnItem } from "@/components/ReturnCard";
 import { AddReturnDialog } from "@/components/AddReturnDialog";
+import { EditReturnDialog } from "@/components/EditReturnDialog";
 import { ReturnDetailDialog } from "@/components/ReturnDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [returns, setReturns] = useState<ReturnItem[]>([]);
   const [selectedReturn, setSelectedReturn] = useState<ReturnItem | null>(null);
+  const [editingReturn, setEditingReturn] = useState<ReturnItem | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
 
@@ -146,6 +148,28 @@ const Index = () => {
     }
   };
 
+  const handleEdit = async (id: string, data: Partial<ReturnItem>) => {
+    const { error } = await supabase
+      .from('returns')
+      .update({
+        store_name: data.storeName,
+        amount: data.price,
+        purchase_date: data.purchaseDate?.toISOString().split('T')[0],
+        return_date: data.returnDate?.toISOString().split('T')[0],
+        returned_date: data.returnedDate?.toISOString().split('T')[0] || null,
+        receipt_image: data.receiptImage,
+      })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to update return');
+    } else {
+      await fetchReturns();
+      setEditingReturn(null);
+      toast.success("Return updated successfully!");
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -183,7 +207,7 @@ const Index = () => {
                 <Receipt className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">ReturnTrackr</h1>
+                <h1 className="text-2xl font-bold">ReFundly</h1>
                 <p className="text-sm text-primary-foreground/80">Track your returns effortlessly</p>
               </div>
             </div>
@@ -265,7 +289,16 @@ const Index = () => {
         onToggleRefund={handleToggleRefund}
         onMarkComplete={handleMarkComplete}
         onMarkReturned={handleMarkReturned}
+        onEdit={setEditingReturn}
         onDelete={handleDelete}
+      />
+
+      {/* Edit Dialog */}
+      <EditReturnDialog
+        item={editingReturn}
+        open={!!editingReturn}
+        onOpenChange={(open) => !open && setEditingReturn(null)}
+        onSave={handleEdit}
       />
     </div>
   );
