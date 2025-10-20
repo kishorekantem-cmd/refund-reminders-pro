@@ -52,7 +52,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     setFormData({
       storeName: "",
       purchaseDate: "",
-      return by: "",
+      returnDate: "",
       returnedDate: "",
       price: "",
       receiptImage: "",
