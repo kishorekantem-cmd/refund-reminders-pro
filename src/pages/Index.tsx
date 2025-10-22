@@ -68,7 +68,7 @@ const Index = () => {
       .insert({
         user_id: user.id,
         store_name: newReturn.storeName,
-        item_name: newReturn.storeName, // Using store name as item name for now
+        item_name: newReturn.storeName,
         amount: newReturn.price,
         purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
         return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
@@ -81,9 +81,19 @@ const Index = () => {
 
     if (error) {
       toast.error('Failed to add return');
-      console.error(error);
-    } else {
-      await fetchReturns();
+    } else if (data) {
+      const newItem: ReturnItem = {
+        id: data.id,
+        storeName: data.store_name,
+        purchaseDate: new Date(data.purchase_date),
+        returnDate: data.return_date ? new Date(data.return_date) : null,
+        returnedDate: new Date(data.returned_date),
+        price: Number(data.amount),
+        receiptImage: data.receipt_image,
+        status: "pending",
+        refundReceived: false,
+      };
+      setReturns([newItem, ...returns]);
       toast.success('Return added successfully!');
     }
   };
@@ -92,15 +102,20 @@ const Index = () => {
     const returnItem = returns.find(r => r.id === id);
     if (!returnItem) return;
 
+    const newRefundStatus = !returnItem.refundReceived;
     const { error } = await supabase
       .from('returns')
-      .update({ refund_received: !returnItem.refundReceived })
+      .update({ refund_received: newRefundStatus })
       .eq('id', id);
 
     if (error) {
       toast.error('Failed to update refund status');
     } else {
-      await fetchReturns();
+      setReturns(returns.map(r => 
+        r.id === id 
+          ? { ...r, refundReceived: newRefundStatus, status: newRefundStatus ? "completed" : "pending" }
+          : r
+      ));
       toast.success("Refund status updated");
     }
   };
@@ -114,7 +129,11 @@ const Index = () => {
     if (error) {
       toast.error('Failed to mark as complete');
     } else {
-      await fetchReturns();
+      setReturns(returns.map(r => 
+        r.id === id 
+          ? { ...r, refundReceived: true, status: "completed" }
+          : r
+      ));
       setSelectedReturn(null);
       toast.success("Return marked as complete!");
     }
@@ -129,7 +148,7 @@ const Index = () => {
     if (error) {
       toast.error('Failed to delete return');
     } else {
-      await fetchReturns();
+      setReturns(returns.filter(r => r.id !== id));
       setSelectedReturn(null);
       toast.success("Return deleted");
     }
@@ -144,7 +163,11 @@ const Index = () => {
     if (error) {
       toast.error('Failed to mark as returned');
     } else {
-      await fetchReturns();
+      setReturns(returns.map(r => 
+        r.id === id 
+          ? { ...r, returnedDate: date }
+          : r
+      ));
       toast.success("Marked as returned!");
     }
   };
@@ -165,7 +188,11 @@ const Index = () => {
     if (error) {
       toast.error('Failed to update return');
     } else {
-      await fetchReturns();
+      setReturns(returns.map(r => 
+        r.id === id 
+          ? { ...r, ...data }
+          : r
+      ));
       setEditingReturn(null);
       toast.success("Return updated successfully!");
     }
