@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ReturnItem } from "./ReturnCard";
@@ -28,19 +29,18 @@ export const ReturnDetailDialog = ({
 }: ReturnDetailDialogProps) => {
   if (!item) return null;
 
-  const daysSinceReturned = item.returnedDate 
-    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
-    : null;
+  const daysSinceReturned = Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const needsRefundReminder = item.returnedDate && !item.refundReceived && daysSinceReturned !== null && daysSinceReturned >= 3;
+  const needsRefundReminder = !item.refundReceived && daysSinceReturned >= 3;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Return Details</DialogTitle>
         </DialogHeader>
 
+        <ScrollArea className="max-h-[calc(90vh-8rem)] pr-4">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -77,22 +77,22 @@ export const ReturnDetailDialog = ({
 
             <div className="p-4 rounded-lg bg-secondary/50">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Return Deadline</span>
+                <Calendar className="w-4 h-4 text-success" />
+                <span className="text-sm font-medium">Date Returned</span>
               </div>
               <p className="text-lg font-semibold">
-                {format(item.returnDate, "MMMM d, yyyy")}
+                {format(item.returnedDate, "MMMM d, yyyy")}
               </p>
             </div>
 
-            {item.returnedDate && (
+            {item.returnDate && (
               <div className="p-4 rounded-lg bg-secondary/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Actually Returned On</span>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Return Deadline (Optional)</span>
                 </div>
                 <p className="text-lg font-semibold">
-                  {format(item.returnedDate, "MMMM d, yyyy")}
+                  {format(item.returnDate, "MMMM d, yyyy")}
                 </p>
               </div>
             )}
@@ -132,7 +132,7 @@ export const ReturnDetailDialog = ({
               </div>
               {needsRefundReminder && (
                 <p className="text-xs text-warning font-medium mt-2">
-                  ⚠️ {daysSinceReturned} days since return - Check if refund received!
+                  ⚠️ To check whether returned amount is received ({daysSinceReturned} days since return)
                 </p>
               )}
             </div>
@@ -141,15 +141,6 @@ export const ReturnDetailDialog = ({
           <div className="flex flex-col gap-2">
             {item.status === "pending" && (
               <>
-                {!item.returnedDate && (
-                  <Button
-                    onClick={() => onMarkReturned(item.id, new Date())}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Mark as Returned Today
-                  </Button>
-                )}
                 <Button
                   onClick={() => onToggleRefund(item.id)}
                   variant="outline"
@@ -185,6 +176,7 @@ export const ReturnDetailDialog = ({
             </Button>
           </div>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

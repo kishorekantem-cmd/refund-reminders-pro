@@ -7,8 +7,8 @@ export interface ReturnItem {
   id: string;
   storeName: string;
   purchaseDate: Date;
-  returnDate: Date;
-  returnedDate?: Date | null;
+  returnDate: Date | null;
+  returnedDate: Date;
   price: number;
   receiptImage?: string;
   status: "pending" | "completed";
@@ -21,15 +21,9 @@ interface ReturnCardProps {
 }
 
 export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
-  const daysUntilReturn = Math.ceil(
-    (item.returnDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysSinceReturned = Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const daysSinceReturned = item.returnedDate 
-    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
-    : null;
-
-  const needsRefundReminder = item.returnedDate && !item.refundReceived && daysSinceReturned !== null && daysSinceReturned >= 3;
+  const needsRefundReminder = !item.refundReceived && daysSinceReturned >= 3;
 
   return (
     <Card
@@ -61,15 +55,17 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-success">
           <Calendar className="w-4 h-4" />
-          <span>Return by: {format(item.returnDate, "MMM d, yyyy")}</span>
-          {daysUntilReturn > 0 && item.status === "pending" && (
-            <span className="text-warning font-medium">
-              ({daysUntilReturn} days left)
-            </span>
-          )}
+          <span>Returned: {format(item.returnedDate, "MMM d, yyyy")}</span>
         </div>
+
+        {item.returnDate && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>Return by: {format(item.returnDate, "MMM d, yyyy")}</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 text-sm">
           <DollarSign className="w-4 h-4 text-accent" />
@@ -90,14 +86,12 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
         <div className="mt-3 pt-3 border-t border-border">
           {needsRefundReminder ? (
             <p className="text-xs text-warning font-medium">
-              ⚠️ Reminder: Check if refund received ({daysSinceReturned} days since return)
+              ⚠️ To check whether returned amount is received ({daysSinceReturned} days since return)
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
               {item.refundReceived
                 ? "✓ Refund confirmed"
-                : item.returnedDate
-                ? `Returned ${format(item.returnedDate, "MMM d, yyyy")} - Waiting for refund`
                 : "Waiting for refund confirmation"}
             </p>
           )}

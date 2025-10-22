@@ -48,8 +48,8 @@ const Index = () => {
         id: item.id,
         storeName: item.store_name,
         purchaseDate: new Date(item.purchase_date),
-        returnDate: new Date(item.return_date),
-        returnedDate: item.returned_date ? new Date(item.returned_date) : null,
+        returnDate: item.return_date ? new Date(item.return_date) : null,
+        returnedDate: new Date(item.returned_date),
         price: Number(item.amount),
         receiptImage: item.receipt_image,
         status: item.refund_received ? "completed" : "pending",
@@ -71,7 +71,8 @@ const Index = () => {
         item_name: newReturn.storeName, // Using store name as item name for now
         amount: newReturn.price,
         purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
-        return_date: newReturn.returnDate.toISOString().split('T')[0],
+        return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
+        returned_date: newReturn.returnedDate.toISOString().split('T')[0],
         receipt_image: newReturn.receiptImage,
         refund_received: false,
       })
@@ -155,8 +156,8 @@ const Index = () => {
         store_name: data.storeName,
         amount: data.price,
         purchase_date: data.purchaseDate?.toISOString().split('T')[0],
-        return_date: data.returnDate?.toISOString().split('T')[0],
-        returned_date: data.returnedDate?.toISOString().split('T')[0] || null,
+        return_date: data.returnDate ? data.returnDate.toISOString().split('T')[0] : null,
+        returned_date: data.returnedDate?.toISOString().split('T')[0],
         receipt_image: data.receiptImage,
       })
       .eq('id', id);

@@ -12,8 +12,8 @@ const editReturnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
   price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
   purchaseDate: z.string().min(1, "Purchase date is required"),
-  returnDate: z.string().min(1, "Return date is required"),
-  returnedDate: z.string().optional(),
+  returnDate: z.string().optional(),
+  returnedDate: z.string().min(1, "Date returned is required"),
 });
 
 interface EditReturnDialogProps {
@@ -67,18 +67,18 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     }
 
     const purchaseDate = new Date(formData.purchaseDate);
-    const returnDate = new Date(formData.returnDate);
+    const returnedDate = new Date(formData.returnedDate);
 
-    if (returnDate <= purchaseDate) {
-      toast.error("Return date must be after purchase date");
+    if (returnedDate <= purchaseDate) {
+      toast.error("Returned date must be after purchase date");
       return;
     }
 
     onSave(item.id, {
       storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
-      returnDate: new Date(formData.returnDate),
-      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
+      returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
+      returnedDate: new Date(formData.returnedDate),
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
     });
@@ -131,24 +131,24 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="returnDate">Return By *</Label>
+              <Label htmlFor="returnDate">Return By (Optional)</Label>
               <Input
                 id="returnDate"
                 type="date"
                 value={formData.returnDate}
                 onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-                required
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="returnedDate">Returned On</Label>
+            <Label htmlFor="returnedDate">Date Returned *</Label>
             <Input
               id="returnedDate"
               type="date"
               value={formData.returnedDate}
               onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
+              required
             />
           </div>
 
