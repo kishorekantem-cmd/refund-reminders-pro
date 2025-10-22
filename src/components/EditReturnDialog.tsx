@@ -6,6 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
+import { z } from "zod";
+
+const editReturnSchema = z.object({
+  storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
+  price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
+  purchaseDate: z.string().min(1, "Purchase date is required"),
+  returnDate: z.string().min(1, "Return date is required"),
+  returnedDate: z.string().optional(),
+});
 
 interface EditReturnDialogProps {
   item: ReturnItem | null;
@@ -42,8 +51,18 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     
     if (!item) return;
 
-    if (!formData.storeName || !formData.purchaseDate || !formData.returnDate || !formData.price) {
-      toast.error("Please fill in all required fields");
+    // Validate with zod schema
+    const validationResult = editReturnSchema.safeParse({
+      storeName: formData.storeName,
+      price: parseFloat(formData.price),
+      purchaseDate: formData.purchaseDate,
+      returnDate: formData.returnDate,
+      returnedDate: formData.returnedDate,
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors;
+      toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
 
@@ -56,7 +75,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     }
 
     onSave(item.id, {
-      storeName: formData.storeName,
+      storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
       returnDate: new Date(formData.returnDate),
       returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
@@ -94,6 +113,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
               value={formData.storeName}
               onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
               placeholder="e.g., Amazon, Target"
+              maxLength={100}
               required
             />
           </div>
@@ -139,6 +159,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
               type="number"
               step="0.01"
               min="0"
+              max="999999.99"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               placeholder="0.00"

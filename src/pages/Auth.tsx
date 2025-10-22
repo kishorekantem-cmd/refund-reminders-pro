@@ -8,6 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RotateCcw } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128, "Password must be less than 128 characters"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -37,8 +43,19 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // Validate with zod schema
+      const validationResult = authSchema.safeParse({
         email,
+        password,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        throw new Error(errors[0]?.message || "Please check your inputs");
+      }
+
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`
@@ -67,8 +84,19 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Validate with zod schema
+      const validationResult = authSchema.safeParse({
         email,
+        password,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        throw new Error(errors[0]?.message || "Please check your inputs");
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
 
@@ -116,6 +144,7 @@ const Auth = () => {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    maxLength={255}
                     required
                   />
                 </div>
@@ -127,6 +156,8 @@ const Auth = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    maxLength={128}
                     required
                   />
                 </div>
@@ -146,6 +177,7 @@ const Auth = () => {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    maxLength={255}
                     required
                   />
                 </div>
@@ -157,8 +189,9 @@ const Auth = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                     minLength={6}
+                    maxLength={128}
+                    required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
