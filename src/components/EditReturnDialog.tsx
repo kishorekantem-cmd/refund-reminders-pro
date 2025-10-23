@@ -83,11 +83,6 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         toast.error("Return by date must be on or after purchase date");
         return;
       }
-      
-      if (returnDate > today) {
-        toast.error("Return by date cannot be in the future");
-        return;
-      }
     }
 
     onSave(item.id, {
