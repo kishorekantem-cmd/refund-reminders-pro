@@ -38,7 +38,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       setFormData({
         storeName: item.storeName,
         purchaseDate: item.purchaseDate.toISOString().split('T')[0],
-        returnDate: item.returnDate.toISOString().split('T')[0],
+        returnDate: item.returnDate ? item.returnDate.toISOString().split('T')[0] : "",
         returnedDate: item.returnedDate ? item.returnedDate.toISOString().split('T')[0] : "",
         price: item.price.toString(),
         receiptImage: item.receiptImage || "",
@@ -68,10 +68,26 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (returnedDate <= purchaseDate) {
       toast.error("Returned date must be after purchase date");
       return;
+    }
+
+    if (formData.returnDate) {
+      const returnDate = new Date(formData.returnDate);
+      
+      if (returnDate < purchaseDate) {
+        toast.error("Return by date must be on or after purchase date");
+        return;
+      }
+      
+      if (returnDate > today) {
+        toast.error("Return by date cannot be in the future");
+        return;
+      }
     }
 
     onSave(item.id, {
@@ -101,7 +117,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Return</DialogTitle>
         </DialogHeader>
