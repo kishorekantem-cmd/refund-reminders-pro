@@ -71,8 +71,8 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (returnedDate <= purchaseDate) {
-      toast.error("Returned date must be after purchase date");
+    if (returnedDate < purchaseDate) {
+      toast.error("Date returned must be on or after purchase date");
       return;
     }
 

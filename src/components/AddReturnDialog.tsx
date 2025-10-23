@@ -52,9 +52,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
 
-    if (returnedDate <= purchaseDate) {
-      toast.error("Returned date must be after purchase date");
+    if (returnedDate < purchaseDate) {
+      toast.error("Date returned must be on or after purchase date");
       return;
+    }
+
+    if (formData.returnDate) {
+      const returnDate = new Date(formData.returnDate);
+      
+      if (returnDate < purchaseDate) {
+        toast.error("Return by date must be on or after purchase date");
+        return;
+      }
     }
 
     onAdd({
