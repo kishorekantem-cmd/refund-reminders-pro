@@ -51,9 +51,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (returnedDate < purchaseDate) {
       toast.error("Date returned must be on or after purchase date");
+      return;
+    }
+
+    if (returnedDate > today) {
+      toast.error("Date returned cannot be in the future");
       return;
     }
 

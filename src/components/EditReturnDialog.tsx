@@ -76,6 +76,11 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       return;
     }
 
+    if (returnedDate > today) {
+      toast.error("Date returned cannot be in the future");
+      return;
+    }
+
     if (formData.returnDate) {
       const returnDate = new Date(formData.returnDate);
       
