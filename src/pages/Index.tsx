@@ -35,29 +35,35 @@ const Index = () => {
 
   const fetchReturns = async () => {
     setFetchLoading(true);
-    const { data, error } = await supabase
-      .from('returns')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('returns')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        toast.error('Failed to load returns');
+        console.error(error);
+      } else {
+        const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
+          id: item.id,
+          storeName: item.store_name,
+          purchaseDate: new Date(item.purchase_date),
+          returnDate: item.return_date ? new Date(item.return_date) : null,
+          returnedDate: item.returned_date ? new Date(item.returned_date) : null,
+          price: Number(item.amount),
+          receiptImage: item.receipt_image,
+          status: item.refund_received ? "completed" : "pending",
+          refundReceived: item.refund_received,
+        }));
+        setReturns(transformedReturns);
+      }
+    } catch (error) {
       toast.error('Failed to load returns');
-      console.error(error);
-    } else {
-      const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
-        id: item.id,
-        storeName: item.store_name,
-        purchaseDate: new Date(item.purchase_date),
-        returnDate: item.return_date ? new Date(item.return_date) : null,
-        returnedDate: new Date(item.returned_date),
-        price: Number(item.amount),
-        receiptImage: item.receipt_image,
-        status: item.refund_received ? "completed" : "pending",
-        refundReceived: item.refund_received,
-      }));
-      setReturns(transformedReturns);
+      console.error('Fetch error:', error);
+    } finally {
+      setFetchLoading(false);
     }
-    setFetchLoading(false);
   };
 
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {

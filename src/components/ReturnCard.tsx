@@ -8,7 +8,7 @@ export interface ReturnItem {
   storeName: string;
   purchaseDate: Date;
   returnDate: Date | null;
-  returnedDate: Date;
+  returnedDate: Date | null;
   price: number;
   receiptImage?: string;
   status: "pending" | "completed";
@@ -21,9 +21,11 @@ interface ReturnCardProps {
 }
 
 export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
-  const daysSinceReturned = Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceReturned = item.returnedDate 
+    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
-  const needsRefundReminder = !item.refundReceived && daysSinceReturned >= 3;
+  const needsRefundReminder = !item.refundReceived && item.returnedDate && daysSinceReturned >= 3;
 
   return (
     <Card
@@ -55,10 +57,12 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm text-success">
-          <Calendar className="w-4 h-4" />
-          <span>Returned: {format(item.returnedDate, "MMM d, yyyy")}</span>
-        </div>
+        {item.returnedDate && (
+          <div className="flex items-center gap-2 text-sm text-success">
+            <Calendar className="w-4 h-4" />
+            <span>Returned: {format(item.returnedDate, "MMM d, yyyy")}</span>
+          </div>
+        )}
 
         {item.returnDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
