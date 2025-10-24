@@ -23,28 +23,54 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('No user found, redirecting to auth');
       navigate('/auth');
     }
   }, [user, loading, navigate]);
 
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, fetching returns for user:', user.id);
       fetchReturns();
+    } else {
+      console.log('No user in effect, skipping fetch');
     }
   }, [user]);
 
   const fetchReturns = async () => {
+    if (!user) {
+      console.error('Cannot fetch returns: no user authenticated');
+      return;
+    }
+
     setFetchLoading(true);
+    console.log('Starting fetch returns...');
+    
     try {
+      // Check session validity first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
+        toast.error('Authentication error. Please sign in again.');
+        navigate('/auth');
+        return;
+      }
+
+      console.log('Session valid, fetching returns...');
+      
       const { data, error } = await supabase
         .from('returns')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('Query result:', { data, error });
+
       if (error) {
         toast.error('Failed to load returns');
-        console.error(error);
+        console.error('Database error:', error);
       } else {
+        console.log(`Successfully fetched ${data?.length || 0} returns`);
         const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
           id: item.id,
           storeName: item.store_name,
@@ -60,9 +86,10 @@ const Index = () => {
       }
     } catch (error) {
       toast.error('Failed to load returns');
-      console.error('Fetch error:', error);
+      console.error('Fetch exception:', error);
     } finally {
       setFetchLoading(false);
+      console.log('Fetch complete');
     }
   };
 
