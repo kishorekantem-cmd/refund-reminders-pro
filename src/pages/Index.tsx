@@ -20,6 +20,7 @@ const Index = () => {
   const [editingReturn, setEditingReturn] = useState<ReturnItem | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -69,6 +70,27 @@ const Index = () => {
       console.error('Fetch exception:', error);
     } finally {
       setFetchLoading(false);
+    }
+  };
+
+  const loadReceiptImage = async (returnId: string) => {
+    setLoadingReceipt(true);
+    try {
+      const { data, error } = await supabase
+        .from('returns')
+        .select('receipt_image')
+        .eq('id', returnId)
+        .single();
+
+      if (error) {
+        console.error('Failed to load receipt image:', error);
+      } else if (data?.receipt_image) {
+        setSelectedReturn(prev => prev ? { ...prev, receiptImage: data.receipt_image } : null);
+      }
+    } catch (error) {
+      console.error('Error loading receipt:', error);
+    } finally {
+      setLoadingReceipt(false);
     }
   };
 
@@ -314,7 +336,10 @@ const Index = () => {
               <ReturnCard
                 key={item.id}
                 item={item}
-                onClick={() => setSelectedReturn(item)}
+                onClick={() => {
+                  setSelectedReturn(item);
+                  loadReceiptImage(item.id);
+                }}
               />
             ))
           )}
