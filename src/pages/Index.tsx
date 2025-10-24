@@ -23,54 +23,34 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      console.log('No user found, redirecting to auth');
       navigate('/auth');
     }
   }, [user, loading, navigate]);
 
   useEffect(() => {
     if (user) {
-      console.log('User authenticated, fetching returns for user:', user.id);
       fetchReturns();
-    } else {
-      console.log('No user in effect, skipping fetch');
     }
   }, [user]);
 
   const fetchReturns = async () => {
     if (!user) {
-      console.error('Cannot fetch returns: no user authenticated');
       return;
     }
 
     setFetchLoading(true);
-    console.log('Starting fetch returns...');
     
     try {
-      // Check session validity first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.error('Session error:', sessionError);
-        toast.error('Authentication error. Please sign in again.');
-        navigate('/auth');
-        return;
-      }
-
-      console.log('Session valid, fetching returns...');
-      
+      // Exclude receipt_image from initial fetch to prevent timeout on large base64 images
       const { data, error } = await supabase
         .from('returns')
-        .select('*')
+        .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
-
-      console.log('Query result:', { data, error });
 
       if (error) {
         toast.error('Failed to load returns');
         console.error('Database error:', error);
       } else {
-        console.log(`Successfully fetched ${data?.length || 0} returns`);
         const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
           id: item.id,
           storeName: item.store_name,
@@ -78,7 +58,7 @@ const Index = () => {
           returnDate: item.return_date ? new Date(item.return_date) : null,
           returnedDate: item.returned_date ? new Date(item.returned_date) : null,
           price: Number(item.amount),
-          receiptImage: item.receipt_image,
+          receiptImage: null, // Will be loaded on demand when viewing details
           status: item.refund_received ? "completed" : "pending",
           refundReceived: item.refund_received,
         }));
@@ -89,7 +69,6 @@ const Index = () => {
       console.error('Fetch exception:', error);
     } finally {
       setFetchLoading(false);
-      console.log('Fetch complete');
     }
   };
 
