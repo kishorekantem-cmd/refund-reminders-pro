@@ -41,9 +41,10 @@ const Index = () => {
     setFetchLoading(true);
     
     try {
+      // Fetch minimal data first, check if receipt exists separately
       const { data, error } = await supabase
         .from('returns')
-        .select('*')
+        .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -51,6 +52,15 @@ const Index = () => {
         toast.error('Failed to load returns');
         console.error('Database error:', error);
       } else {
+        // Check which returns have receipts
+        const { data: receiptChecks } = await supabase
+          .from('returns')
+          .select('id, receipt_image')
+          .eq('user_id', user.id)
+          .not('receipt_image', 'is', null);
+
+        const receiptMap = new Map(receiptChecks?.map(r => [r.id, true]) || []);
+
         const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
           id: item.id,
           storeName: item.store_name,
@@ -58,8 +68,8 @@ const Index = () => {
           returnDate: item.return_date ? new Date(item.return_date) : null,
           returnedDate: item.returned_date ? new Date(item.returned_date) : null,
           price: Number(item.amount),
-          receiptImage: item.receipt_image || undefined,
-          hasReceipt: !!item.receipt_image,
+          receiptImage: undefined,
+          hasReceipt: receiptMap.has(item.id),
           status: item.refund_received ? "completed" : "pending",
           refundReceived: item.refund_received,
         }));
