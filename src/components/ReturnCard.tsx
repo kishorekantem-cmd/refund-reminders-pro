@@ -11,7 +11,6 @@ export interface ReturnItem {
   returnedDate: Date | null;
   price: number;
   receiptImage?: string;
-  hasReceipt?: boolean;
   status: "pending" | "completed";
   refundReceived?: boolean;
 }
@@ -79,7 +78,7 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
           </span>
         </div>
 
-        {(item.receiptImage || item.hasReceipt) && (
+        {item.receiptImage && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ImageIcon className="w-4 h-4" />
             <span>Receipt attached</span>
