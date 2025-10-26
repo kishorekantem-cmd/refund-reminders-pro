@@ -1,10 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ReturnItem } from "./ReturnCard";
+import { useState } from "react";
 
 interface ReturnDetailDialogProps {
   item: ReturnItem | null;
@@ -27,11 +29,19 @@ export const ReturnDetailDialog = ({
   onEdit,
   onDelete,
 }: ReturnDetailDialogProps) => {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
   if (!item) return null;
 
   const daysSinceReturned = Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const needsRefundReminder = !item.refundReceived && daysSinceReturned >= 3;
+
+  const handleConfirmRefund = () => {
+    onToggleRefund(item.id);
+    onMarkComplete(item.id);
+    setShowConfirmDialog(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,22 +149,13 @@ export const ReturnDetailDialog = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            {item.status === "pending" && (
-              <>
-                <Button
-                  onClick={() => onToggleRefund(item.id)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {item.refundReceived ? "Mark Refund as Pending" : "Confirm Refund Received"}
-                </Button>
-                <Button
-                  onClick={() => onMarkComplete(item.id)}
-                  className="w-full bg-gradient-success hover:opacity-90"
-                >
-                  Mark as Complete
-                </Button>
-              </>
+            {item.status === "pending" && !item.refundReceived && (
+              <Button
+                onClick={() => setShowConfirmDialog(true)}
+                className="w-full bg-gradient-success hover:opacity-90"
+              >
+                Confirm Refund Received
+              </Button>
             )}
             <Button
               onClick={() => {
@@ -178,6 +179,23 @@ export const ReturnDetailDialog = ({
         </div>
         </ScrollArea>
       </DialogContent>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Refund Received</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to confirm that you have received the refund? This will mark the return as complete.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRefund}>
+              Confirm Refund Received
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
