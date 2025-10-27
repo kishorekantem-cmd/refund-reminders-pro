@@ -138,40 +138,66 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
+      const timeout = setTimeout(() => {
+        reject(new Error('Image processing timeout - file too large'));
+      }, 30000); // 30 second timeout
+      
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              clearTimeout(timeout);
+              reject(new Error('Failed to get canvas context'));
+              return;
+            }
+
+            // Calculate new dimensions (max 1200px width for receipts)
+            const maxWidth = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Draw and compress
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to base64 with compression (0.6 quality for better compression on mobile)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            
+            // Validate result
+            if (!compressedBase64 || compressedBase64.length < 100) {
+              clearTimeout(timeout);
+              reject(new Error('Image compression produced invalid result'));
+              return;
+            }
+            
+            clearTimeout(timeout);
+            resolve(compressedBase64);
+          } catch (err) {
+            clearTimeout(timeout);
+            reject(err);
           }
-
-          // Calculate new dimensions (max 1200px width for receipts)
-          const maxWidth = 1200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          // Draw and compress
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to base64 with compression (0.7 quality for good balance)
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-          resolve(compressedBase64);
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => {
+          clearTimeout(timeout);
+          reject(new Error('Failed to load image'));
+        };
         img.src = e.target?.result as string;
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Failed to read file'));
+      };
       reader.readAsDataURL(file);
     });
   };
@@ -193,20 +219,28 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       
       try {
         const compressedImage = await compressImage(file);
-        // CRITICAL FIX: Use functional setState to avoid stale closure
+        
+        // Validate compressed image
+        if (!compressedImage || compressedImage.length < 100) {
+          throw new Error('Invalid compressed image');
+        }
+        
+        // Use functional setState to ensure update
         setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
         
-        // Small delay to ensure state update completes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait longer for state update on mobile devices
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         isProcessingRef.current = false;
         setIsProcessingImage(false);
-        toast.success("Receipt image ready! You can now save.", { id: "image-processing" });
+        toast.success("Receipt uploaded! You can now save.", { id: "image-processing" });
       } catch (error) {
-        toast.error("Failed to process image: " + (error as Error).message, { id: "image-processing" });
+        toast.error("Failed to process image. Please try a smaller image.", { id: "image-processing" });
         isProcessingRef.current = false;
         setIsProcessingImage(false);
         e.target.value = '';
+        // Clear the failed image from state
+        setFormData(prev => ({ ...prev, receiptImage: "" }));
       }
     }
   };

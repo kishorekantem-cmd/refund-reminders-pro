@@ -38,19 +38,10 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== FORM SUBMIT START ===');
-    console.log('isProcessingImage:', isProcessingImage);
-    console.log('isProcessingRef.current:', isProcessingRef.current);
-    console.log('hasImage:', !!formData.receiptImage);
-    console.log('imageSize:', formData.receiptImage?.length || 0);
-    
     if (isProcessingRef.current || isProcessingImage) {
-      console.log('BLOCKED: Image still processing');
       toast.error("Please wait for image to finish processing");
       return;
     }
-    
-    console.log('Proceeding with validation...');
     
     // Validate with zod schema
     const validationResult = returnSchema.safeParse({
@@ -63,12 +54,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     if (!validationResult.success) {
       const errors = validationResult.error.errors;
-      console.error('Validation failed:', errors);
       toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
-    
-    console.log('Validation passed, proceeding with date checks...');
 
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
@@ -93,8 +81,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         return;
       }
     }
-
-    console.log('All validations passed, adding to database...');
     
     const newReturn = {
       store_name: formData.storeName.trim(),
@@ -115,7 +101,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       .single();
 
     if (error) {
-      console.error("Error adding return:", error);
       toast.error("Failed to add return");
       return;
     }
@@ -125,7 +110,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       if (formData.receiptImage) {
         try {
           await saveReceiptImage(data.id, formData.receiptImage);
-          console.log('Receipt image saved to IndexedDB');
         } catch (err) {
           console.error('Failed to save receipt image:', err);
           toast.error("Return added but failed to save receipt image");
@@ -158,51 +142,65 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      console.log('Starting compression for file:', file.name, file.size);
       const reader = new FileReader();
+      
+      const timeout = setTimeout(() => {
+        reject(new Error('Image processing timeout - file too large'));
+      }, 30000); // 30 second timeout
+      
       reader.onload = (e) => {
-        console.log('File read complete, creating image');
         const img = new Image();
         img.onload = () => {
-          console.log('Image loaded, dimensions:', img.width, 'x', img.height);
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            console.error('Failed to get canvas context');
-            reject(new Error('Failed to get canvas context'));
-            return;
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              clearTimeout(timeout);
+              reject(new Error('Failed to get canvas context'));
+              return;
+            }
+
+            // Calculate new dimensions (max 1200px width for receipts)
+            const maxWidth = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Draw and compress
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to base64 with compression (0.6 quality for better compression on mobile)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+            
+            // Validate result
+            if (!compressedBase64 || compressedBase64.length < 100) {
+              clearTimeout(timeout);
+              reject(new Error('Image compression produced invalid result'));
+              return;
+            }
+            
+            clearTimeout(timeout);
+            resolve(compressedBase64);
+          } catch (err) {
+            clearTimeout(timeout);
+            reject(err);
           }
-
-          // Calculate new dimensions (max 1200px width for receipts)
-          const maxWidth = 1200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-
-          console.log('Resizing to:', width, 'x', height);
-          canvas.width = width;
-          canvas.height = height;
-
-          // Draw and compress
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to base64 with compression (0.7 quality for good balance)
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-          console.log('Compression complete, new size:', compressedBase64.length);
-          resolve(compressedBase64);
         };
-        img.onerror = (err) => {
-          console.error('Image load error:', err);
+        img.onerror = () => {
+          clearTimeout(timeout);
           reject(new Error('Failed to load image'));
         };
         img.src = e.target?.result as string;
       };
-      reader.onerror = (err) => {
-        console.error('File read error:', err);
+      reader.onerror = () => {
+        clearTimeout(timeout);
         reject(new Error('Failed to read file'));
       };
       reader.readAsDataURL(file);
@@ -211,14 +209,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('=== IMAGE UPLOAD START ===');
-    console.log('File selected:', file?.name, 'Size:', file?.size);
     
     if (file) {
       // Check file size (max 10MB before compression)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.log('File too large:', file.size);
         toast.error("Image too large. Please choose an image smaller than 10MB.");
         e.target.value = '';
         return;
@@ -226,37 +221,33 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
       isProcessingRef.current = true;
       setIsProcessingImage(true);
-      console.log('Set processing flags to true');
       toast.loading("Compressing image...", { id: "image-processing" });
       
       try {
-        console.log('Starting compression...');
         const compressedImage = await compressImage(file);
-        console.log('Compression complete, size:', compressedImage.length);
-        console.log('Updating form data with functional setState...');
-        // CRITICAL FIX: Use functional setState to avoid stale closure
-        setFormData(prev => {
-          console.log('Previous form data storeName:', prev.storeName);
-          return { ...prev, receiptImage: compressedImage };
-        });
-        console.log('Form data updated');
         
-        // Small delay to ensure state update completes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Validate compressed image
+        if (!compressedImage || compressedImage.length < 100) {
+          throw new Error('Invalid compressed image');
+        }
+        
+        // Use functional setState to ensure update
+        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
+        
+        // Wait longer for state update on mobile devices
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         isProcessingRef.current = false;
         setIsProcessingImage(false);
-        console.log('Set processing flags to false');
-        toast.success("Receipt image ready! You can now submit.", { id: "image-processing" });
+        toast.success("Receipt uploaded! You can now submit.", { id: "image-processing" });
       } catch (error) {
-        console.error('Compression failed:', error);
-        toast.error("Failed to process image: " + (error as Error).message, { id: "image-processing" });
+        toast.error("Failed to process image. Please try a smaller image.", { id: "image-processing" });
         isProcessingRef.current = false;
         setIsProcessingImage(false);
         e.target.value = '';
+        // Clear the failed image from state
+        setFormData(prev => ({ ...prev, receiptImage: "" }));
       }
-    } else {
-      console.log('No file selected');
     }
   };
 
