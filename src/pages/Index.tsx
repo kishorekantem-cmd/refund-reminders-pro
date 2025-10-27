@@ -36,30 +36,38 @@ const Index = () => {
 
   const fetchReturns = async () => {
     if (!user) {
+      console.log('No user found, skipping fetch');
       return;
     }
 
+    console.log('Starting fetchReturns...');
     setFetchLoading(true);
     
     try {
+      console.log('Fetching returns data...');
       // Exclude receipt_image from initial fetch to prevent timeout on large base64 images
       const { data, error } = await supabase
         .from('returns')
         .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
 
+      console.log('Returns data fetched:', data?.length, 'items');
+
       // Check which returns have receipts (lightweight query - only fetch IDs)
+      console.log('Checking for receipts...');
       const { data: receiptsData } = await supabase
         .from('returns')
         .select('id')
         .not('receipt_image', 'is', null);
 
+      console.log('Receipts check complete:', receiptsData?.length, 'items with receipts');
       const receiptsMap = new Set(receiptsData?.map(r => r.id) || []);
 
       if (error) {
-        toast.error('Failed to load returns');
         console.error('Database error:', error);
+        toast.error('Failed to load returns');
       } else {
+        console.log('Transforming returns data...');
         const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
           id: item.id,
           storeName: item.store_name,
@@ -72,12 +80,15 @@ const Index = () => {
           status: item.refund_received ? "completed" : "pending",
           refundReceived: item.refund_received,
         }));
+        console.log('Setting returns state with', transformedReturns.length, 'items');
         setReturns(transformedReturns);
+        console.log('Returns state updated');
       }
     } catch (error) {
-      toast.error('Failed to load returns');
       console.error('Fetch exception:', error);
+      toast.error('Failed to load returns');
     } finally {
+      console.log('Setting fetchLoading to false');
       setFetchLoading(false);
     }
   };
