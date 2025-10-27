@@ -130,7 +130,17 @@ const Index = () => {
   };
 
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, cannot add return');
+      return;
+    }
+
+    console.log('Adding new return:', {
+      storeName: newReturn.storeName,
+      price: newReturn.price,
+      hasReceipt: !!newReturn.receiptImage,
+      receiptSize: newReturn.receiptImage ? newReturn.receiptImage.length : 0
+    });
 
     const { data, error } = await supabase
       .from('returns')
@@ -149,8 +159,10 @@ const Index = () => {
       .single();
 
     if (error) {
-      toast.error('Failed to add return');
+      console.error('Failed to add return:', error);
+      toast.error('Failed to add return: ' + error.message);
     } else if (data) {
+      console.log('Return added successfully:', data.id);
       const newItem: ReturnItem = {
         id: data.id,
         storeName: data.store_name,
