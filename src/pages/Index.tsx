@@ -327,7 +327,10 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowLogoutDialog(true)}
+                onClick={() => {
+                  console.log('Logout icon clicked');
+                  handleSignOut();
+                }}
                 className="text-primary-foreground hover:bg-white/10 touch-manipulation"
                 aria-label="Logout"
               >
@@ -417,31 +420,6 @@ const Index = () => {
         onOpenChange={(open) => !open && setEditingReturn(null)}
         onSave={handleEdit}
       />
-
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to logout? You'll need to sign in again to access your returns.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => console.log('Cancel clicked')}>Cancel</AlertDialogCancel>
-            <Button
-              onClick={() => {
-                console.log('Logout button clicked in dialog');
-                setShowLogoutDialog(false);
-                handleSignOut();
-              }}
-              className="touch-manipulation"
-            >
-              Logout
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
