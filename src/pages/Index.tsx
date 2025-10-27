@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { ReturnCard, ReturnItem } from "@/components/ReturnCard";
 import { AddReturnDialog } from "@/components/AddReturnDialog";
 import { EditReturnDialog } from "@/components/EditReturnDialog";
@@ -33,11 +33,10 @@ const Index = () => {
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
+  // Immediate redirect if no user - this prevents any other effects from running
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   useEffect(() => {
     if (user) {
@@ -275,17 +274,7 @@ const Index = () => {
 
   const handleSignOut = async () => {
     setShowLogoutDialog(false);
-    try {
-      console.log('Attempting to sign out...');
-      await signOut();
-      console.log('Sign out successful, navigating to auth...');
-      navigate('/auth');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
-      // Force navigation even if signOut fails
-      navigate('/auth');
-    }
+    await signOut();
   };
 
   const filteredReturns = returns.filter((item) => {
