@@ -263,8 +263,17 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
+    try {
+      console.log('Attempting to sign out...');
+      await signOut();
+      console.log('Sign out successful, navigating to auth...');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
+      // Force navigation even if signOut fails
+      navigate('/auth');
+    }
   };
 
   const filteredReturns = returns.filter((item) => {
@@ -309,7 +318,8 @@ const Index = () => {
                 variant="ghost"
                 size="icon"
                 onClick={handleSignOut}
-                className="text-primary-foreground hover:bg-white/10"
+                className="text-primary-foreground hover:bg-white/10 touch-manipulation"
+                aria-label="Logout"
               >
                 <LogOut className="w-5 h-5" />
               </Button>
