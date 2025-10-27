@@ -26,16 +26,29 @@ export const useAuth = () => {
   }, []);
 
   const signOut = async () => {
+    console.log('=== SIGNOUT FUNCTION CALLED ===');
+    console.log('Current user before signout:', user?.email);
     try {
-      await supabase.auth.signOut();
-      // Immediately clear the local state
+      // First, clear local state immediately
       setUser(null);
       setSession(null);
+      setLoading(true);
+      console.log('Local state cleared, calling supabase.auth.signOut()');
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        throw error;
+      }
+      console.log('Supabase signOut successful');
     } catch (error) {
       console.error('Error signing out:', error);
-      // Clear state even if signOut fails
+      // Keep state cleared even if signOut fails
       setUser(null);
       setSession(null);
+    } finally {
+      setLoading(false);
+      console.log('=== SIGNOUT COMPLETE ===');
     }
   };
 
