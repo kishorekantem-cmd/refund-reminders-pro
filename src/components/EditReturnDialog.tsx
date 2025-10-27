@@ -7,6 +7,8 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { saveReceiptImage } from "@/lib/imageStorage";
 
 const editReturnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -89,6 +91,35 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       if (returnDate < purchaseDate) {
         toast.error("Return by date must be on or after purchase date");
         return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("returns")
+      .update({
+        store_name: formData.storeName.trim(),
+        purchase_date: formData.purchaseDate,
+        return_date: formData.returnDate || null,
+        returned_date: formData.returnedDate,
+        amount: parseFloat(formData.price),
+        has_receipt: !!formData.receiptImage,
+      })
+      .eq("id", item.id);
+
+    if (error) {
+      console.error("Error updating return:", error);
+      toast.error("Failed to update return");
+      return;
+    }
+
+    // Store image locally if present
+    if (formData.receiptImage) {
+      try {
+        await saveReceiptImage(item.id, formData.receiptImage);
+        console.log('Receipt image saved to IndexedDB');
+      } catch (err) {
+        console.error('Failed to save receipt image:', err);
+        toast.error("Return updated but failed to save receipt image");
       }
     }
 

@@ -7,6 +7,8 @@ import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { saveReceiptImage } from "@/lib/imageStorage";
 
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -92,28 +94,65 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       }
     }
 
-    console.log('All validations passed, calling onAdd...');
-    onAdd({
-      storeName: formData.storeName.trim(),
-      purchaseDate: new Date(formData.purchaseDate),
-      returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
-      returnedDate: new Date(formData.returnedDate),
-      price: parseFloat(formData.price),
-      receiptImage: formData.receiptImage || undefined,
-      status: "pending",
-      refundReceived: false,
-    });
+    console.log('All validations passed, adding to database...');
+    
+    const newReturn = {
+      store_name: formData.storeName.trim(),
+      purchase_date: formData.purchaseDate,
+      return_date: formData.returnDate || null,
+      returned_date: formData.returnedDate,
+      amount: parseFloat(formData.price),
+      refund_received: false,
+      has_receipt: !!formData.receiptImage,
+      user_id: (await supabase.auth.getUser()).data.user?.id,
+    };
 
-    setFormData({
-      storeName: "",
-      purchaseDate: "",
-      returnDate: "",
-      returnedDate: "",
-      price: "",
-      receiptImage: "",
-    });
-    setOpen(false);
-    toast.success("Return added successfully!");
+    const { data, error } = await supabase
+      .from("returns")
+      .insert([newReturn])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding return:", error);
+      toast.error("Failed to add return");
+      return;
+    }
+
+    if (data) {
+      // Store image locally if present
+      if (formData.receiptImage) {
+        try {
+          await saveReceiptImage(data.id, formData.receiptImage);
+          console.log('Receipt image saved to IndexedDB');
+        } catch (err) {
+          console.error('Failed to save receipt image:', err);
+          toast.error("Return added but failed to save receipt image");
+        }
+      }
+      
+      onAdd({
+        ...data,
+        storeName: data.store_name,
+        purchaseDate: new Date(data.purchase_date),
+        returnDate: data.return_date ? new Date(data.return_date) : null,
+        returnedDate: new Date(data.returned_date),
+        price: Number(data.amount),
+        status: "pending",
+        refundReceived: false,
+      });
+
+      setFormData({
+        storeName: "",
+        purchaseDate: "",
+        returnDate: "",
+        returnedDate: "",
+        price: "",
+        receiptImage: "",
+      });
+      setOpen(false);
+      toast.success("Return added successfully!");
+    }
   };
 
   const compressImage = (file: File): Promise<string> => {
