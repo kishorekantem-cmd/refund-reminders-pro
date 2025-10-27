@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          has_receipt: boolean | null
           id: string
           item_name: string
           notes: string | null
@@ -57,6 +58,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          has_receipt?: boolean | null
           id?: string
           item_name: string
           notes?: string | null
@@ -72,6 +74,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          has_receipt?: boolean | null
           id?: string
           item_name?: string
           notes?: string | null

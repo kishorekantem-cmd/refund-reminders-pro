@@ -8,6 +8,7 @@ export interface ReturnItem {
   return_date: string;
   returned_date: string | null;
   receipt_image: string | null;
+  has_receipt: boolean;
   refund_received: boolean;
   notes: string | null;
   created_at: string;

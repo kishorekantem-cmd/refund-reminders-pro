@@ -35,7 +35,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     receiptImage: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     console.log('=== FORM SUBMIT START ===');
@@ -98,6 +98,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     
     const newReturn = {
       store_name: formData.storeName.trim(),
+      item_name: formData.storeName.trim(), // Using store name as item name for now
       purchase_date: formData.purchaseDate,
       return_date: formData.returnDate || null,
       returned_date: formData.returnedDate,
