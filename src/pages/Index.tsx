@@ -49,41 +49,51 @@ const Index = () => {
       const { data, error } = await supabase
         .from('returns')
         .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Database error:', error);
+        toast.error('Failed to load returns: ' + error.message);
+        setFetchLoading(false);
+        return;
+      }
 
       console.log('Returns data fetched:', data?.length, 'items');
 
       // Check which returns have receipts (lightweight query - only fetch IDs)
       console.log('Checking for receipts...');
-      const { data: receiptsData } = await supabase
+      const { data: receiptsData, error: receiptsError } = await supabase
         .from('returns')
         .select('id')
-        .not('receipt_image', 'is', null);
+        .not('receipt_image', 'is', null)
+        .limit(100);
+
+      if (receiptsError) {
+        console.error('Receipts check error:', receiptsError);
+        // Continue without receipt info rather than failing
+      }
 
       console.log('Receipts check complete:', receiptsData?.length, 'items with receipts');
       const receiptsMap = new Set(receiptsData?.map(r => r.id) || []);
 
-      if (error) {
-        console.error('Database error:', error);
-        toast.error('Failed to load returns');
-      } else {
-        console.log('Transforming returns data...');
-        const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
-          id: item.id,
-          storeName: item.store_name,
-          purchaseDate: new Date(item.purchase_date),
-          returnDate: item.return_date ? new Date(item.return_date) : null,
-          returnedDate: item.returned_date ? new Date(item.returned_date) : null,
-          price: Number(item.amount),
-          receiptImage: null, // Will be loaded on demand when viewing details
-          hasReceipt: receiptsMap.has(item.id),
-          status: item.refund_received ? "completed" : "pending",
-          refundReceived: item.refund_received,
-        }));
-        console.log('Setting returns state with', transformedReturns.length, 'items');
-        setReturns(transformedReturns);
-        console.log('Returns state updated');
-      }
+
+      console.log('Transforming returns data...');
+      const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
+        id: item.id,
+        storeName: item.store_name,
+        purchaseDate: new Date(item.purchase_date),
+        returnDate: item.return_date ? new Date(item.return_date) : null,
+        returnedDate: item.returned_date ? new Date(item.returned_date) : null,
+        price: Number(item.amount),
+        receiptImage: null, // Will be loaded on demand when viewing details
+        hasReceipt: receiptsMap.has(item.id),
+        status: item.refund_received ? "completed" : "pending",
+        refundReceived: item.refund_received,
+      }));
+      console.log('Setting returns state with', transformedReturns.length, 'items');
+      setReturns(transformedReturns);
+      console.log('Returns state updated');
     } catch (error) {
       console.error('Fetch exception:', error);
       toast.error('Failed to load returns');
