@@ -99,9 +99,22 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 5MB to prevent database issues)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error("Image too large. Please choose an image smaller than 5MB.");
+        e.target.value = ''; // Clear the input
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, receiptImage: reader.result as string });
+        toast.success("Receipt image uploaded");
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read image file");
+        e.target.value = ''; // Clear the input
       };
       reader.readAsDataURL(file);
     }
