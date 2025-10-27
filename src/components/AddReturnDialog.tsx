@@ -45,11 +45,14 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       purchaseDate: formData.purchaseDate,
       returnedDate: formData.returnedDate,
       hasImage: !!formData.receiptImage,
-      imageSize: formData.receiptImage?.length || 0
+      imageSize: formData.receiptImage?.length || 0,
+      isProcessingRef: isProcessingRef.current,
+      isProcessingState: isProcessingImage
     });
     
-    if (isProcessingRef.current || isProcessingImage) {
-      console.log('BLOCKED: Still processing image');
+    // Only check the ref, not the state (state updates may lag on mobile)
+    if (isProcessingRef.current) {
+      console.log('BLOCKED: Still processing image (ref check)');
       toast.error("Please wait for image to finish processing");
       return;
     }
@@ -276,11 +279,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           return { ...prev, receiptImage: compressedImage };
         });
         
-        // Wait longer for state update on mobile devices
-        console.log('Waiting for state update...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
+        // Clear processing flags BEFORE state update to avoid race condition
         isProcessingRef.current = false;
+        
+        // Wait for state update on mobile devices
+        console.log('Waiting for state update...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         setIsProcessingImage(false);
         console.log('Set processing flags FALSE');
         console.log('=== IMAGE UPLOAD COMPLETE ===');
@@ -400,9 +405,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           <Button 
             type="submit" 
             className="w-full bg-gradient-primary hover:opacity-90"
-            disabled={isProcessingImage}
           >
-            {isProcessingImage ? "Processing image..." : "Add Return"}
+            Add Return
           </Button>
         </form>
       </DialogContent>
