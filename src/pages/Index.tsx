@@ -324,18 +324,25 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <AddReturnDialog onAdd={handleAddReturn} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  console.log('Logout icon clicked');
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Logout button clicked!');
                   handleSignOut();
                 }}
-                className="text-primary-foreground hover:bg-white/10 touch-manipulation"
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Logout touch detected!');
+                  handleSignOut();
+                }}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation z-50"
                 aria-label="Logout"
+                style={{ position: 'relative', zIndex: 9999 }}
               >
                 <LogOut className="w-5 h-5" />
-              </Button>
+              </button>
             </div>
           </div>
         </div>
