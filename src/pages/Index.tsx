@@ -6,6 +6,16 @@ import { EditReturnDialog } from "@/components/EditReturnDialog";
 import { ReturnDetailDialog } from "@/components/ReturnDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Package, Receipt, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +31,7 @@ const Index = () => {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -317,7 +328,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleSignOut}
+                onClick={() => setShowLogoutDialog(true)}
                 className="text-primary-foreground hover:bg-white/10 touch-manipulation"
                 aria-label="Logout"
               >
@@ -407,6 +418,22 @@ const Index = () => {
         onOpenChange={(open) => !open && setEditingReturn(null)}
         onSave={handleEdit}
       />
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You'll need to sign in again to access your returns.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Logout</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
