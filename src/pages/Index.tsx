@@ -328,18 +328,15 @@ const Index = () => {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log('Logout button clicked!');
-                  handleSignOut();
+                  console.log('=== LOGOUT BUTTON CLICKED ===');
+                  const confirmed = window.confirm('Are you sure you want to logout?');
+                  console.log('Confirmation result:', confirmed);
+                  if (confirmed) {
+                    handleSignOut();
+                  }
                 }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Logout touch detected!');
-                  handleSignOut();
-                }}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation z-50"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
                 aria-label="Logout"
-                style={{ position: 'relative', zIndex: 9999 }}
               >
                 <LogOut className="w-5 h-5" />
               </button>
