@@ -35,6 +35,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submit triggered', {
+      isProcessingImage,
+      hasImage: !!formData.receiptImage,
+      imageSize: formData.receiptImage?.length || 0
+    });
+    
+    if (isProcessingImage) {
+      console.log('Image still processing, blocking submit');
+      toast.error("Please wait for image to finish processing");
+      return;
+    }
+    
     // Validate with zod schema
     const validationResult = returnSchema.safeParse({
       storeName: formData.storeName,
@@ -46,6 +58,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     if (!validationResult.success) {
       const errors = validationResult.error.errors;
+      console.error('Validation failed:', errors);
       toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
@@ -99,13 +112,17 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      console.log('Starting compression for file:', file.name, file.size);
       const reader = new FileReader();
       reader.onload = (e) => {
+        console.log('File read complete, creating image');
         const img = new Image();
         img.onload = () => {
+          console.log('Image loaded, dimensions:', img.width, 'x', img.height);
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) {
+            console.error('Failed to get canvas context');
             reject(new Error('Failed to get canvas context'));
             return;
           }
@@ -120,6 +137,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             width = maxWidth;
           }
 
+          console.log('Resizing to:', width, 'x', height);
           canvas.width = width;
           canvas.height = height;
 
@@ -128,36 +146,50 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           
           // Convert to base64 with compression (0.7 quality for good balance)
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          console.log('Compression complete, new size:', compressedBase64.length);
           resolve(compressedBase64);
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = (err) => {
+          console.error('Image load error:', err);
+          reject(new Error('Failed to load image'));
+        };
         img.src = e.target?.result as string;
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = (err) => {
+        console.error('File read error:', err);
+        reject(new Error('Failed to read file'));
+      };
       reader.readAsDataURL(file);
     });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log('handleImageUpload called, file:', file?.name, file?.size);
+    
     if (file) {
       // Check file size (max 10MB before compression)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
+        console.log('File too large:', file.size);
         toast.error("Image too large. Please choose an image smaller than 10MB.");
         e.target.value = '';
         return;
       }
 
       setIsProcessingImage(true);
+      console.log('Set isProcessingImage to true');
       toast.loading("Compressing image...", { id: "image-processing" });
       
       try {
         const compressedImage = await compressImage(file);
+        console.log('Compression successful, updating form data');
         setFormData({ ...formData, receiptImage: compressedImage });
         setIsProcessingImage(false);
+        console.log('Set isProcessingImage to false');
         toast.success("Receipt image uploaded", { id: "image-processing" });
       } catch (error) {
+        console.error('Compression failed:', error);
         toast.error("Failed to process image", { id: "image-processing" });
         setIsProcessingImage(false);
         e.target.value = '';
