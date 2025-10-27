@@ -38,27 +38,17 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== SUBMIT START ===');
-    console.log('Form data:', {
-      storeName: formData.storeName,
-      price: formData.price,
-      purchaseDate: formData.purchaseDate,
-      returnedDate: formData.returnedDate,
-      hasImage: !!formData.receiptImage,
-      imageSize: formData.receiptImage?.length || 0,
-      isProcessingRef: isProcessingRef.current,
-      isProcessingState: isProcessingImage
-    });
+    toast.info("Step 1: Starting submission...", { id: "debug" });
     
     // Only check the ref, not the state (state updates may lag on mobile)
     if (isProcessingRef.current) {
-      console.log('BLOCKED: Still processing image (ref check)');
       toast.error("Please wait for image to finish processing");
       return;
     }
     
+    toast.info("Step 2: Validating form...", { id: "debug" });
+    
     // Validate with zod schema
-    console.log('Starting validation...');
     const validationResult = returnSchema.safeParse({
       storeName: formData.storeName,
       price: parseFloat(formData.price),
@@ -69,26 +59,23 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     if (!validationResult.success) {
       const errors = validationResult.error.errors;
-      console.log('Validation failed:', errors);
       toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
-    console.log('Validation passed');
 
-    console.log('Checking dates...');
+    toast.info("Step 3: Checking dates...", { id: "debug" });
+    
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     if (returnedDate < purchaseDate) {
-      console.log('Date validation failed: returned < purchase');
       toast.error("Date returned must be on or after purchase date");
       return;
     }
 
     if (returnedDate > today) {
-      console.log('Date validation failed: returned > today');
       toast.error("Date returned cannot be in the future");
       return;
     }
@@ -97,16 +84,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       const returnDate = new Date(formData.returnDate);
       
       if (returnDate < purchaseDate) {
-        console.log('Date validation failed: return by < purchase');
         toast.error("Return by date must be on or after purchase date");
         return;
       }
     }
     
-    console.log('All validations passed, creating return object...');
+    toast.info("Step 4: Saving to database...", { id: "debug" });
+    
     const newReturn = {
       store_name: formData.storeName.trim(),
-      item_name: formData.storeName.trim(), // Using store name as item name for now
+      item_name: formData.storeName.trim(),
       purchase_date: formData.purchaseDate,
       return_date: formData.returnDate || null,
       returned_date: formData.returnedDate,
@@ -115,11 +102,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       has_receipt: !!formData.receiptImage,
       user_id: (await supabase.auth.getUser()).data.user?.id,
     };
-
-    console.log('Inserting into database...', { 
-      hasImage: !!formData.receiptImage,
-      imageLength: formData.receiptImage?.length 
-    });
     
     const { data, error } = await supabase
       .from("returns")
@@ -128,27 +110,22 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       .single();
 
     if (error) {
-      console.error('Database insert error:', error);
       toast.error("Failed to add return: " + error.message);
       return;
     }
 
-    console.log('Database insert successful:', data?.id);
-
     if (data) {
+      toast.info("Step 5: Saving receipt image...", { id: "debug" });
+      
       // Store image locally if present
       if (formData.receiptImage) {
-        console.log('Saving receipt image to IndexedDB...');
         try {
           await saveReceiptImage(data.id, formData.receiptImage);
-          console.log('Receipt image saved successfully');
         } catch (err) {
-          console.error('Failed to save receipt image:', err);
           toast.error("Return added but failed to save receipt image");
         }
       }
       
-      console.log('Calling onAdd callback...');
       onAdd({
         ...data,
         storeName: data.store_name,
@@ -160,7 +137,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         refundReceived: false,
       });
 
-      console.log('Resetting form...');
       setFormData({
         storeName: "",
         purchaseDate: "",
@@ -170,8 +146,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         receiptImage: "",
       });
       setOpen(false);
-      console.log('=== SUBMIT COMPLETE ===');
-      toast.success("Return added successfully!");
+      toast.success("Return added successfully!", { id: "debug" });
     }
   };
 
