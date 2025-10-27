@@ -193,16 +193,24 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         console.log('Starting compression...');
         const compressedImage = await compressImage(file);
         console.log('Compression complete, size:', compressedImage.length);
-        console.log('Updating form data...');
-        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
+        console.log('Updating form data with functional setState...');
+        // CRITICAL FIX: Use functional setState to avoid stale closure
+        setFormData(prev => {
+          console.log('Previous form data storeName:', prev.storeName);
+          return { ...prev, receiptImage: compressedImage };
+        });
         console.log('Form data updated');
+        
+        // Small delay to ensure state update completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         isProcessingRef.current = false;
         setIsProcessingImage(false);
         console.log('Set processing flags to false');
-        toast.success("Receipt image uploaded", { id: "image-processing" });
+        toast.success("Receipt image ready! You can now submit.", { id: "image-processing" });
       } catch (error) {
         console.error('Compression failed:', error);
-        toast.error("Failed to process image", { id: "image-processing" });
+        toast.error("Failed to process image: " + (error as Error).message, { id: "image-processing" });
         isProcessingRef.current = false;
         setIsProcessingImage(false);
         e.target.value = '';

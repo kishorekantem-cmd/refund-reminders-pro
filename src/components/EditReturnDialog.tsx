@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ interface EditReturnDialogProps {
 
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const isProcessingRef = useRef(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -155,16 +156,24 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         return;
       }
 
+      isProcessingRef.current = true;
       setIsProcessingImage(true);
       toast.loading("Compressing image...", { id: "image-processing" });
       
       try {
         const compressedImage = await compressImage(file);
-        setFormData({ ...formData, receiptImage: compressedImage });
+        // CRITICAL FIX: Use functional setState to avoid stale closure
+        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
+        
+        // Small delay to ensure state update completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        isProcessingRef.current = false;
         setIsProcessingImage(false);
-        toast.success("Receipt image uploaded", { id: "image-processing" });
+        toast.success("Receipt image ready! You can now save.", { id: "image-processing" });
       } catch (error) {
-        toast.error("Failed to process image", { id: "image-processing" });
+        toast.error("Failed to process image: " + (error as Error).message, { id: "image-processing" });
+        isProcessingRef.current = false;
         setIsProcessingImage(false);
         e.target.value = '';
       }
