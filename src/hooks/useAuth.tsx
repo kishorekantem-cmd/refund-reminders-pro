@@ -28,25 +28,37 @@ export const useAuth = () => {
   const signOut = async () => {
     console.log('=== SIGNOUT FUNCTION CALLED ===');
     console.log('Current user before signout:', user?.email);
+    
+    // First, clear local state immediately
+    setUser(null);
+    setSession(null);
+    setLoading(true);
+    console.log('Local state cleared');
+    
     try {
-      // First, clear local state immediately
-      setUser(null);
-      setSession(null);
-      setLoading(true);
-      console.log('Local state cleared, calling supabase.auth.signOut()');
-      
+      console.log('Calling supabase.auth.signOut()');
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Supabase signOut error:', error);
-        throw error;
+      
+      // Ignore 403 errors - session may already be invalid on server
+      if (error && error.message !== 'Session from session_id claim in JWT does not exist') {
+        console.error('Supabase signOut error (non-403):', error);
       }
-      console.log('Supabase signOut successful');
+      
+      console.log('Supabase signOut complete');
     } catch (error) {
       console.error('Error signing out:', error);
-      // Keep state cleared even if signOut fails
+    } finally {
+      // Force clear all auth data from localStorage
+      console.log('Force clearing localStorage...');
+      localStorage.removeItem('supabase.auth.token');
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       setUser(null);
       setSession(null);
-    } finally {
       setLoading(false);
       console.log('=== SIGNOUT COMPLETE ===');
     }
