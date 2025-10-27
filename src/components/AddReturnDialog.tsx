@@ -37,118 +37,113 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("=== FORM SUBMIT STARTED ===");
     
-    toast.info("Starting submission...", { duration: 2000 });
-    
-    // Only check the ref, not the state (state updates may lag on mobile)
-    if (isProcessingRef.current) {
-      toast.error("Please wait for image to finish processing");
-      return;
-    }
-    
-    console.log("Form data:", { storeName: formData.storeName, price: formData.price });
-    
-    // Validate with zod schema
-    const validationResult = returnSchema.safeParse({
-      storeName: formData.storeName,
-      price: parseFloat(formData.price),
-      purchaseDate: formData.purchaseDate,
-      returnDate: formData.returnDate,
-      returnedDate: formData.returnedDate,
-    });
-
-    if (!validationResult.success) {
-      const errors = validationResult.error.errors;
-      toast.error(errors[0]?.message || "Please check your inputs");
-      return;
-    }
-
-    console.log("Validation passed, checking dates...");
-    
-    const purchaseDate = new Date(formData.purchaseDate);
-    const returnedDate = new Date(formData.returnedDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (returnedDate < purchaseDate) {
-      toast.error("Date returned must be on or after purchase date");
-      return;
-    }
-
-    if (returnedDate > today) {
-      toast.error("Date returned cannot be in the future");
-      return;
-    }
-
-    if (formData.returnDate) {
-      const returnDate = new Date(formData.returnDate);
+    try {
+      toast.loading("Adding return...", { id: "submit" });
       
-      if (returnDate < purchaseDate) {
-        toast.error("Return by date must be on or after purchase date");
+      // Only check the ref, not the state (state updates may lag on mobile)
+      if (isProcessingRef.current) {
+        toast.error("Please wait for image to finish processing", { id: "submit" });
         return;
       }
-    }
-    
-    console.log("Dates validated, saving to database...");
-    
-    const newReturn = {
-      store_name: formData.storeName.trim(),
-      item_name: formData.storeName.trim(),
-      purchase_date: formData.purchaseDate,
-      return_date: formData.returnDate || null,
-      returned_date: formData.returnedDate,
-      amount: parseFloat(formData.price),
-      refund_received: false,
-      has_receipt: !!formData.receiptImage,
-      user_id: (await supabase.auth.getUser()).data.user?.id,
-    };
-    
-    const { data, error } = await supabase
-      .from("returns")
-      .insert([newReturn])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Failed to add return: " + error.message);
-      return;
-    }
-
-    if (data) {
-      console.log("Database save successful, processing receipt...");
       
-      // Store image locally if present
-      if (formData.receiptImage) {
-        try {
-          await saveReceiptImage(data.id, formData.receiptImage);
-        } catch (err) {
-          toast.error("Return added but failed to save receipt image");
+      // Validate with zod schema
+      const validationResult = returnSchema.safeParse({
+        storeName: formData.storeName,
+        price: parseFloat(formData.price),
+        purchaseDate: formData.purchaseDate,
+        returnDate: formData.returnDate,
+        returnedDate: formData.returnedDate,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        toast.error(errors[0]?.message || "Please check your inputs", { id: "submit" });
+        return;
+      }
+      
+      const purchaseDate = new Date(formData.purchaseDate);
+      const returnedDate = new Date(formData.returnedDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (returnedDate < purchaseDate) {
+        toast.error("Date returned must be on or after purchase date", { id: "submit" });
+        return;
+      }
+
+      if (returnedDate > today) {
+        toast.error("Date returned cannot be in the future", { id: "submit" });
+        return;
+      }
+
+      if (formData.returnDate) {
+        const returnDate = new Date(formData.returnDate);
+        
+        if (returnDate < purchaseDate) {
+          toast.error("Return by date must be on or after purchase date", { id: "submit" });
+          return;
         }
       }
       
-      onAdd({
-        ...data,
-        storeName: data.store_name,
-        purchaseDate: new Date(data.purchase_date),
-        returnDate: data.return_date ? new Date(data.return_date) : null,
-        returnedDate: new Date(data.returned_date),
-        price: Number(data.amount),
-        status: "pending",
-        refundReceived: false,
-      });
+      const newReturn = {
+        store_name: formData.storeName.trim(),
+        item_name: formData.storeName.trim(),
+        purchase_date: formData.purchaseDate,
+        return_date: formData.returnDate || null,
+        returned_date: formData.returnedDate,
+        amount: parseFloat(formData.price),
+        refund_received: false,
+        has_receipt: !!formData.receiptImage,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+      };
+      
+      const { data, error } = await supabase
+        .from("returns")
+        .insert([newReturn])
+        .select()
+        .single();
 
-      setFormData({
-        storeName: "",
-        purchaseDate: "",
-        returnDate: "",
-        returnedDate: "",
-        price: "",
-        receiptImage: "",
-      });
-      setOpen(false);
-      toast.success("Return added successfully!");
-      console.log("=== FORM SUBMIT COMPLETE ===");
+      if (error) {
+        toast.error("Failed to add return: " + error.message, { id: "submit" });
+        return;
+      }
+
+      if (data) {
+        // Store image locally if present
+        if (formData.receiptImage) {
+          try {
+            await saveReceiptImage(data.id, formData.receiptImage);
+          } catch (err) {
+            toast.error("Return added but failed to save receipt image", { id: "submit" });
+          }
+        }
+        
+        onAdd({
+          ...data,
+          storeName: data.store_name,
+          purchaseDate: new Date(data.purchase_date),
+          returnDate: data.return_date ? new Date(data.return_date) : null,
+          returnedDate: new Date(data.returned_date),
+          price: Number(data.amount),
+          status: "pending",
+          refundReceived: false,
+        });
+
+        setFormData({
+          storeName: "",
+          purchaseDate: "",
+          returnDate: "",
+          returnedDate: "",
+          price: "",
+          receiptImage: "",
+        });
+        setOpen(false);
+        toast.success("Return added successfully!", { id: "submit" });
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast.error("Something went wrong. Please try again.", { id: "submit" });
     }
   };
 
@@ -382,8 +377,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           <Button 
             type="submit" 
             className="w-full bg-gradient-primary hover:opacity-90"
+            disabled={isProcessingImage}
           >
-            Add Return
+            {isProcessingImage ? "Processing Image..." : "Add Return"}
           </Button>
         </form>
       </DialogContent>
