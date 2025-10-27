@@ -20,6 +20,7 @@ const Index = () => {
   const [editingReturn, setEditingReturn] = useState<ReturnItem | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -41,10 +42,19 @@ const Index = () => {
     setFetchLoading(true);
     
     try {
+      // Exclude receipt_image from initial fetch to prevent timeout on large base64 images
       const { data, error } = await supabase
         .from('returns')
-        .select('*')
+        .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
+
+      // Lightweight query to check which returns have receipt images
+      const { data: receiptsCheck } = await supabase
+        .from('returns')
+        .select('id, receipt_image')
+        .not('receipt_image', 'is', null);
+
+      const receiptsMap = new Set(receiptsCheck?.map(r => r.id) || []);
 
       if (error) {
         toast.error('Failed to load returns');
@@ -57,7 +67,8 @@ const Index = () => {
           returnDate: item.return_date ? new Date(item.return_date) : null,
           returnedDate: item.returned_date ? new Date(item.returned_date) : null,
           price: Number(item.amount),
-          receiptImage: item.receipt_image,
+          receiptImage: null, // Will be loaded on demand
+          hasReceipt: receiptsMap.has(item.id),
           status: item.refund_received ? "completed" : "pending",
           refundReceived: item.refund_received,
         }));
@@ -68,6 +79,27 @@ const Index = () => {
       console.error('Fetch exception:', error);
     } finally {
       setFetchLoading(false);
+    }
+  };
+
+  const loadReceiptImage = async (returnId: string) => {
+    setLoadingReceipt(true);
+    try {
+      const { data, error } = await supabase
+        .from('returns')
+        .select('receipt_image')
+        .eq('id', returnId)
+        .single();
+
+      if (error) {
+        console.error('Failed to load receipt image:', error);
+      } else if (data?.receipt_image) {
+        setSelectedReturn(prev => prev ? { ...prev, receiptImage: data.receipt_image } : null);
+      }
+    } catch (error) {
+      console.error('Error loading receipt:', error);
+    } finally {
+      setLoadingReceipt(false);
     }
   };
 
@@ -313,7 +345,12 @@ const Index = () => {
               <ReturnCard
                 key={item.id}
                 item={item}
-                onClick={() => setSelectedReturn(item)}
+                onClick={() => {
+                  setSelectedReturn(item);
+                  if (item.hasReceipt) {
+                    loadReceiptImage(item.id);
+                  }
+                }}
               />
             ))
           )}
