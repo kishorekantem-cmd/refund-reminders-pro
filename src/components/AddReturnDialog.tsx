@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,6 @@ import { Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { saveReceiptImage } from "@/lib/imageStorage";
 
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -24,8 +22,6 @@ interface AddReturnDialogProps {
 
 export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const isProcessingRef = useRef(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -35,242 +31,79 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     receiptImage: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      toast.loading("Adding return...", { id: "submit" });
-      
-      // Only check the ref, not the state (state updates may lag on mobile)
-      if (isProcessingRef.current) {
-        toast.error("Please wait for image to finish processing", { id: "submit" });
-        return;
-      }
-      
-      // Validate with zod schema
-      const validationResult = returnSchema.safeParse({
-        storeName: formData.storeName,
-        price: parseFloat(formData.price),
-        purchaseDate: formData.purchaseDate,
-        returnDate: formData.returnDate,
-        returnedDate: formData.returnedDate,
-      });
+    // Validate with zod schema
+    const validationResult = returnSchema.safeParse({
+      storeName: formData.storeName,
+      price: parseFloat(formData.price),
+      purchaseDate: formData.purchaseDate,
+      returnDate: formData.returnDate,
+      returnedDate: formData.returnedDate,
+    });
 
-      if (!validationResult.success) {
-        const errors = validationResult.error.errors;
-        toast.error(errors[0]?.message || "Please check your inputs", { id: "submit" });
-        return;
-      }
-      
-      const purchaseDate = new Date(formData.purchaseDate);
-      const returnedDate = new Date(formData.returnedDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (returnedDate < purchaseDate) {
-        toast.error("Date returned must be on or after purchase date", { id: "submit" });
-        return;
-      }
-
-      if (returnedDate > today) {
-        toast.error("Date returned cannot be in the future", { id: "submit" });
-        return;
-      }
-
-      if (formData.returnDate) {
-        const returnDate = new Date(formData.returnDate);
-        
-        if (returnDate < purchaseDate) {
-          toast.error("Return by date must be on or after purchase date", { id: "submit" });
-          return;
-        }
-      }
-      
-      const newReturn = {
-        store_name: formData.storeName.trim(),
-        item_name: formData.storeName.trim(),
-        purchase_date: formData.purchaseDate,
-        return_date: formData.returnDate || null,
-        returned_date: formData.returnedDate,
-        amount: parseFloat(formData.price),
-        refund_received: false,
-        has_receipt: !!formData.receiptImage,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-      };
-      
-      const { data, error } = await supabase
-        .from("returns")
-        .insert([newReturn])
-        .select()
-        .single();
-
-      if (error) {
-        toast.error("Failed to add return: " + error.message, { id: "submit" });
-        return;
-      }
-
-      if (data) {
-        // Store image locally if present
-        if (formData.receiptImage) {
-          try {
-            await saveReceiptImage(data.id, formData.receiptImage);
-          } catch (err) {
-            toast.error("Return added but failed to save receipt image", { id: "submit" });
-          }
-        }
-        
-        onAdd({
-          ...data,
-          storeName: data.store_name,
-          purchaseDate: new Date(data.purchase_date),
-          returnDate: data.return_date ? new Date(data.return_date) : null,
-          returnedDate: new Date(data.returned_date),
-          price: Number(data.amount),
-          status: "pending",
-          refundReceived: false,
-        });
-
-        setFormData({
-          storeName: "",
-          purchaseDate: "",
-          returnDate: "",
-          returnedDate: "",
-          price: "",
-          receiptImage: "",
-        });
-        setOpen(false);
-        toast.success("Return added successfully!", { id: "submit" });
-      }
-    } catch (error) {
-      console.error("Form submission error:", error);
-      toast.error("Something went wrong. Please try again.", { id: "submit" });
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors;
+      toast.error(errors[0]?.message || "Please check your inputs");
+      return;
     }
+
+    const purchaseDate = new Date(formData.purchaseDate);
+    const returnedDate = new Date(formData.returnedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (returnedDate < purchaseDate) {
+      toast.error("Date returned must be on or after purchase date");
+      return;
+    }
+
+    if (returnedDate > today) {
+      toast.error("Date returned cannot be in the future");
+      return;
+    }
+
+    if (formData.returnDate) {
+      const returnDate = new Date(formData.returnDate);
+      
+      if (returnDate < purchaseDate) {
+        toast.error("Return by date must be on or after purchase date");
+        return;
+      }
+    }
+
+    onAdd({
+      storeName: formData.storeName.trim(),
+      purchaseDate: new Date(formData.purchaseDate),
+      returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
+      returnedDate: new Date(formData.returnedDate),
+      price: parseFloat(formData.price),
+      receiptImage: formData.receiptImage || undefined,
+      status: "pending",
+      refundReceived: false,
+    });
+
+    setFormData({
+      storeName: "",
+      purchaseDate: "",
+      returnDate: "",
+      returnedDate: "",
+      price: "",
+      receiptImage: "",
+    });
+    setOpen(false);
+    toast.success("Return added successfully!");
   };
 
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
       const reader = new FileReader();
-      
-      const timeout = setTimeout(() => {
-        reject(new Error('Image processing timeout - file too large'));
-      }, 30000); // 30 second timeout
-      
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              clearTimeout(timeout);
-              reject(new Error('Failed to get canvas context'));
-              return;
-            }
-
-            // Calculate new dimensions (max 1200px width for receipts)
-            const maxWidth = 1200;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            // Draw and compress
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to base64 with compression (0.6 quality for better compression on mobile)
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            
-            // Validate result
-            if (!compressedBase64 || compressedBase64.length < 100) {
-              clearTimeout(timeout);
-              reject(new Error('Image compression produced invalid result'));
-              return;
-            }
-            
-            clearTimeout(timeout);
-            resolve(compressedBase64);
-          } catch (err) {
-            clearTimeout(timeout);
-            reject(err);
-          }
-        };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error('Failed to load image'));
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error('Failed to read file'));
+      reader.onloadend = () => {
+        setFormData({ ...formData, receiptImage: reader.result as string });
       };
       reader.readAsDataURL(file);
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    console.log('=== IMAGE UPLOAD START ===');
-    console.log('File:', file?.name, 'Size:', file?.size);
-    
-    if (file) {
-      // Check file size (max 10MB before compression)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        console.log('File too large');
-        toast.error("Image too large. Please choose an image smaller than 10MB.");
-        e.target.value = '';
-        return;
-      }
-
-      isProcessingRef.current = true;
-      setIsProcessingImage(true);
-      console.log('Set processing flags TRUE');
-      toast.loading("Compressing image...", { id: "image-processing" });
-      
-      try {
-        console.log('Starting compression...');
-        const compressedImage = await compressImage(file);
-        console.log('Compressed size:', compressedImage.length);
-        
-        // Validate compressed image
-        if (!compressedImage || compressedImage.length < 100) {
-          throw new Error('Invalid compressed image');
-        }
-        
-        // Use functional setState to ensure update
-        console.log('Updating form state...');
-        setFormData(prev => {
-          console.log('Setting receiptImage, prev storeName:', prev.storeName);
-          return { ...prev, receiptImage: compressedImage };
-        });
-        
-        // Clear processing flags BEFORE state update to avoid race condition
-        isProcessingRef.current = false;
-        
-        // Wait for state update on mobile devices
-        console.log('Waiting for state update...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setIsProcessingImage(false);
-        console.log('Set processing flags FALSE');
-        console.log('=== IMAGE UPLOAD COMPLETE ===');
-        toast.success("Receipt uploaded! You can now submit.", { id: "image-processing" });
-      } catch (error) {
-        console.error('Image processing error:', error);
-        toast.error("Failed to process image. Please try a smaller image.", { id: "image-processing" });
-        isProcessingRef.current = false;
-        setIsProcessingImage(false);
-        e.target.value = '';
-        // Clear the failed image from state
-        setFormData(prev => ({ ...prev, receiptImage: "" }));
-      }
     }
   };
 
@@ -374,12 +207,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             )}
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-primary hover:opacity-90"
-            disabled={isProcessingImage}
-          >
-            {isProcessingImage ? "Processing Image..." : "Add Return"}
+          <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+            Add Return
           </Button>
         </form>
       </DialogContent>

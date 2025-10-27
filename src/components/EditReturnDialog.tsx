@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,6 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { saveReceiptImage } from "@/lib/imageStorage";
 
 const editReturnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -26,8 +24,6 @@ interface EditReturnDialogProps {
 }
 
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const isProcessingRef = useRef(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -50,7 +46,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     }
   }, [item]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!item) return;
@@ -94,35 +90,6 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       }
     }
 
-    const { error } = await supabase
-      .from("returns")
-      .update({
-        store_name: formData.storeName.trim(),
-        purchase_date: formData.purchaseDate,
-        return_date: formData.returnDate || null,
-        returned_date: formData.returnedDate,
-        amount: parseFloat(formData.price),
-        has_receipt: !!formData.receiptImage,
-      })
-      .eq("id", item.id);
-
-    if (error) {
-      console.error("Error updating return:", error);
-      toast.error("Failed to update return");
-      return;
-    }
-
-    // Store image locally if present
-    if (formData.receiptImage) {
-      try {
-        await saveReceiptImage(item.id, formData.receiptImage);
-        console.log('Receipt image saved to IndexedDB');
-      } catch (err) {
-        console.error('Failed to save receipt image:', err);
-        toast.error("Return updated but failed to save receipt image");
-      }
-    }
-
     onSave(item.id, {
       storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
@@ -135,113 +102,14 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     onOpenChange(false);
   };
 
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      const timeout = setTimeout(() => {
-        reject(new Error('Image processing timeout - file too large'));
-      }, 30000); // 30 second timeout
-      
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              clearTimeout(timeout);
-              reject(new Error('Failed to get canvas context'));
-              return;
-            }
-
-            // Calculate new dimensions (max 1200px width for receipts)
-            const maxWidth = 1200;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            // Draw and compress
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to base64 with compression (0.6 quality for better compression on mobile)
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            
-            // Validate result
-            if (!compressedBase64 || compressedBase64.length < 100) {
-              clearTimeout(timeout);
-              reject(new Error('Image compression produced invalid result'));
-              return;
-            }
-            
-            clearTimeout(timeout);
-            resolve(compressedBase64);
-          } catch (err) {
-            clearTimeout(timeout);
-            reject(err);
-          }
-        };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          reject(new Error('Failed to load image'));
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error('Failed to read file'));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 10MB before compression)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error("Image too large. Please choose an image smaller than 10MB.");
-        e.target.value = '';
-        return;
-      }
-
-      isProcessingRef.current = true;
-      setIsProcessingImage(true);
-      toast.loading("Compressing image...", { id: "image-processing" });
-      
-      try {
-        const compressedImage = await compressImage(file);
-        
-        // Validate compressed image
-        if (!compressedImage || compressedImage.length < 100) {
-          throw new Error('Invalid compressed image');
-        }
-        
-        // Use functional setState to ensure update
-        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
-        
-        // Wait longer for state update on mobile devices
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        isProcessingRef.current = false;
-        setIsProcessingImage(false);
-        toast.success("Receipt uploaded! You can now save.", { id: "image-processing" });
-      } catch (error) {
-        toast.error("Failed to process image. Please try a smaller image.", { id: "image-processing" });
-        isProcessingRef.current = false;
-        setIsProcessingImage(false);
-        e.target.value = '';
-        // Clear the failed image from state
-        setFormData(prev => ({ ...prev, receiptImage: "" }));
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, receiptImage: reader.result as string });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -345,12 +213,8 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full">
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-primary hover:opacity-90"
-              disabled={isProcessingImage}
-            >
-              {isProcessingImage ? "Processing image..." : "Save Changes"}
+            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
+              Save Changes
             </Button>
           </div>
         </form>

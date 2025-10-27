@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReturnItem as DBReturnItem } from "@/types/database";
-import { getReceiptImage, deleteReceiptImage } from "@/lib/imageStorage";
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -51,9 +50,10 @@ const Index = () => {
     
     try {
       console.log('Fetching returns data...');
+      // Exclude receipt_image from initial fetch to prevent timeout on large base64 images
       const { data, error } = await supabase
         .from('returns')
-        .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, has_receipt, notes, created_at, updated_at')
+        .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -65,33 +65,37 @@ const Index = () => {
       }
 
       console.log('Returns data fetched:', data?.length, 'items');
-      console.log('Loading receipt images from IndexedDB...');
 
-      // Load receipt images from IndexedDB
-      const transformedReturns: ReturnItem[] = await Promise.all(
-        (data as DBReturnItem[]).map(async (item) => {
-          let receiptImage = null;
-          if (item.has_receipt) {
-            try {
-              receiptImage = await getReceiptImage(item.id);
-            } catch (err) {
-              console.error('Failed to load receipt for', item.id, err);
-            }
-          }
-          return {
-            id: item.id,
-            storeName: item.store_name,
-            purchaseDate: new Date(item.purchase_date),
-            returnDate: item.return_date ? new Date(item.return_date) : null,
-            returnedDate: item.returned_date ? new Date(item.returned_date) : null,
-            price: Number(item.amount),
-            receiptImage: receiptImage,
-            hasReceipt: !!receiptImage,
-            status: item.refund_received ? "completed" : "pending",
-            refundReceived: item.refund_received,
-          };
-        })
-      );
+      // Check which returns have receipts (lightweight query - only fetch IDs)
+      console.log('Checking for receipts...');
+      const { data: receiptsData, error: receiptsError } = await supabase
+        .from('returns')
+        .select('id')
+        .not('receipt_image', 'is', null)
+        .limit(100);
+
+      if (receiptsError) {
+        console.error('Receipts check error:', receiptsError);
+        // Continue without receipt info rather than failing
+      }
+
+      console.log('Receipts check complete:', receiptsData?.length, 'items with receipts');
+      const receiptsMap = new Set(receiptsData?.map(r => r.id) || []);
+
+
+      console.log('Transforming returns data...');
+      const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
+        id: item.id,
+        storeName: item.store_name,
+        purchaseDate: new Date(item.purchase_date),
+        returnDate: item.return_date ? new Date(item.return_date) : null,
+        returnedDate: item.returned_date ? new Date(item.returned_date) : null,
+        price: Number(item.amount),
+        receiptImage: null, // Will be loaded on demand when viewing details
+        hasReceipt: receiptsMap.has(item.id),
+        status: item.refund_received ? "completed" : "pending",
+        refundReceived: item.refund_received,
+      }));
       console.log('Setting returns state with', transformedReturns.length, 'items');
       setReturns(transformedReturns);
       console.log('Returns state updated');
@@ -126,17 +130,7 @@ const Index = () => {
   };
 
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
-    if (!user) {
-      console.log('No user found, cannot add return');
-      return;
-    }
-
-    console.log('Adding new return:', {
-      storeName: newReturn.storeName,
-      price: newReturn.price,
-      hasReceipt: !!newReturn.receiptImage,
-      receiptSize: newReturn.receiptImage ? newReturn.receiptImage.length : 0
-    });
+    if (!user) return;
 
     const { data, error } = await supabase
       .from('returns')
@@ -155,10 +149,8 @@ const Index = () => {
       .single();
 
     if (error) {
-      console.error('Failed to add return:', error);
-      toast.error('Failed to add return: ' + error.message);
+      toast.error('Failed to add return');
     } else if (data) {
-      console.log('Return added successfully:', data.id);
       const newItem: ReturnItem = {
         id: data.id,
         storeName: data.store_name,
@@ -225,13 +217,6 @@ const Index = () => {
     if (error) {
       toast.error('Failed to delete return');
     } else {
-      // Delete receipt image from IndexedDB
-      try {
-        await deleteReceiptImage(id);
-      } catch (err) {
-        console.error('Failed to delete receipt image:', err);
-      }
-
       setReturns(returns.filter(r => r.id !== id));
       setSelectedReturn(null);
       toast.success("Return deleted");
