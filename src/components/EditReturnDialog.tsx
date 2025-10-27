@@ -24,6 +24,7 @@ interface EditReturnDialogProps {
 }
 
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -113,13 +114,18 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         return;
       }
 
+      setIsProcessingImage(true);
+      toast.loading("Processing image...", { id: "image-processing" });
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, receiptImage: reader.result as string });
-        toast.success("Receipt image uploaded");
+        setIsProcessingImage(false);
+        toast.success("Receipt image uploaded", { id: "image-processing" });
       };
       reader.onerror = () => {
-        toast.error("Failed to read image file");
+        toast.error("Failed to read image file", { id: "image-processing" });
+        setIsProcessingImage(false);
         e.target.value = ''; // Clear the input
       };
       reader.readAsDataURL(file);
@@ -226,8 +232,12 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full">
               Cancel
             </Button>
-            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-              Save Changes
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-primary hover:opacity-90"
+              disabled={isProcessingImage}
+            >
+              {isProcessingImage ? "Processing image..." : "Save Changes"}
             </Button>
           </div>
         </form>

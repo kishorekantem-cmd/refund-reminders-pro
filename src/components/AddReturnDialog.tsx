@@ -22,6 +22,7 @@ interface AddReturnDialogProps {
 
 export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -107,13 +108,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         return;
       }
 
+      setIsProcessingImage(true);
+      toast.loading("Processing image...", { id: "image-processing" });
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, receiptImage: reader.result as string });
-        toast.success("Receipt image uploaded");
+        setIsProcessingImage(false);
+        toast.success("Receipt image uploaded", { id: "image-processing" });
       };
       reader.onerror = () => {
-        toast.error("Failed to read image file");
+        toast.error("Failed to read image file", { id: "image-processing" });
+        setIsProcessingImage(false);
         e.target.value = ''; // Clear the input
       };
       reader.readAsDataURL(file);
@@ -220,8 +226,12 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             )}
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-            Add Return
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-primary hover:opacity-90"
+            disabled={isProcessingImage}
+          >
+            {isProcessingImage ? "Processing image..." : "Add Return"}
           </Button>
         </form>
       </DialogContent>
