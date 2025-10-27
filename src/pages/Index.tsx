@@ -48,10 +48,10 @@ const Index = () => {
         .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
 
-      // Check which returns have receipts (lightweight query)
+      // Check which returns have receipts (lightweight query - only fetch IDs)
       const { data: receiptsData } = await supabase
         .from('returns')
-        .select('id, receipt_image')
+        .select('id')
         .not('receipt_image', 'is', null);
 
       const receiptsMap = new Set(receiptsData?.map(r => r.id) || []);
