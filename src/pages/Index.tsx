@@ -33,11 +33,6 @@ const Index = () => {
   const [loadingReceipt, setLoadingReceipt] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  // Immediate redirect if no user - this prevents any other effects from running
-  if (!loading && !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   useEffect(() => {
     if (user) {
       fetchReturns();
@@ -286,6 +281,11 @@ const Index = () => {
   const totalAmount = returns
     .filter((r) => r.status === "pending")
     .reduce((sum, r) => sum + r.price, 0);
+
+  // Redirect if no user (after all hooks have been called)
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   if (loading || fetchLoading) {
     return (
