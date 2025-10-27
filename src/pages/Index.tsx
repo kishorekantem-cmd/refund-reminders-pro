@@ -268,8 +268,11 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
+    console.log('handleSignOut called, closing dialog');
     setShowLogoutDialog(false);
+    console.log('Calling signOut function...');
     await signOut();
+    console.log('signOut completed, user should be null now');
   };
 
   const filteredReturns = returns.filter((item) => {
@@ -284,8 +287,11 @@ const Index = () => {
 
   // Redirect if no user (after all hooks have been called)
   if (!loading && !user) {
+    console.log('No user detected, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
+  
+  console.log('Current user:', user?.email, 'loading:', loading);
 
   if (loading || fetchLoading) {
     return (
