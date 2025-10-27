@@ -38,12 +38,24 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== SUBMIT START ===');
+    console.log('Form data:', {
+      storeName: formData.storeName,
+      price: formData.price,
+      purchaseDate: formData.purchaseDate,
+      returnedDate: formData.returnedDate,
+      hasImage: !!formData.receiptImage,
+      imageSize: formData.receiptImage?.length || 0
+    });
+    
     if (isProcessingRef.current || isProcessingImage) {
+      console.log('BLOCKED: Still processing image');
       toast.error("Please wait for image to finish processing");
       return;
     }
     
     // Validate with zod schema
+    console.log('Starting validation...');
     const validationResult = returnSchema.safeParse({
       storeName: formData.storeName,
       price: parseFloat(formData.price),
@@ -54,21 +66,26 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     if (!validationResult.success) {
       const errors = validationResult.error.errors;
+      console.log('Validation failed:', errors);
       toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
+    console.log('Validation passed');
 
+    console.log('Checking dates...');
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     if (returnedDate < purchaseDate) {
+      console.log('Date validation failed: returned < purchase');
       toast.error("Date returned must be on or after purchase date");
       return;
     }
 
     if (returnedDate > today) {
+      console.log('Date validation failed: returned > today');
       toast.error("Date returned cannot be in the future");
       return;
     }
@@ -77,11 +94,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       const returnDate = new Date(formData.returnDate);
       
       if (returnDate < purchaseDate) {
+        console.log('Date validation failed: return by < purchase');
         toast.error("Return by date must be on or after purchase date");
         return;
       }
     }
     
+    console.log('All validations passed, creating return object...');
     const newReturn = {
       store_name: formData.storeName.trim(),
       item_name: formData.storeName.trim(), // Using store name as item name for now
@@ -94,6 +113,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       user_id: (await supabase.auth.getUser()).data.user?.id,
     };
 
+    console.log('Inserting into database...', { 
+      hasImage: !!formData.receiptImage,
+      imageLength: formData.receiptImage?.length 
+    });
+    
     const { data, error } = await supabase
       .from("returns")
       .insert([newReturn])
@@ -101,21 +125,27 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       .single();
 
     if (error) {
-      toast.error("Failed to add return");
+      console.error('Database insert error:', error);
+      toast.error("Failed to add return: " + error.message);
       return;
     }
+
+    console.log('Database insert successful:', data?.id);
 
     if (data) {
       // Store image locally if present
       if (formData.receiptImage) {
+        console.log('Saving receipt image to IndexedDB...');
         try {
           await saveReceiptImage(data.id, formData.receiptImage);
+          console.log('Receipt image saved successfully');
         } catch (err) {
           console.error('Failed to save receipt image:', err);
           toast.error("Return added but failed to save receipt image");
         }
       }
       
+      console.log('Calling onAdd callback...');
       onAdd({
         ...data,
         storeName: data.store_name,
@@ -127,6 +157,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         refundReceived: false,
       });
 
+      console.log('Resetting form...');
       setFormData({
         storeName: "",
         purchaseDate: "",
@@ -136,6 +167,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         receiptImage: "",
       });
       setOpen(false);
+      console.log('=== SUBMIT COMPLETE ===');
       toast.success("Return added successfully!");
     }
   };
@@ -209,11 +241,14 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log('=== IMAGE UPLOAD START ===');
+    console.log('File:', file?.name, 'Size:', file?.size);
     
     if (file) {
       // Check file size (max 10MB before compression)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
+        console.log('File too large');
         toast.error("Image too large. Please choose an image smaller than 10MB.");
         e.target.value = '';
         return;
@@ -221,10 +256,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
       isProcessingRef.current = true;
       setIsProcessingImage(true);
+      console.log('Set processing flags TRUE');
       toast.loading("Compressing image...", { id: "image-processing" });
       
       try {
+        console.log('Starting compression...');
         const compressedImage = await compressImage(file);
+        console.log('Compressed size:', compressedImage.length);
         
         // Validate compressed image
         if (!compressedImage || compressedImage.length < 100) {
@@ -232,15 +270,23 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         }
         
         // Use functional setState to ensure update
-        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
+        console.log('Updating form state...');
+        setFormData(prev => {
+          console.log('Setting receiptImage, prev storeName:', prev.storeName);
+          return { ...prev, receiptImage: compressedImage };
+        });
         
         // Wait longer for state update on mobile devices
+        console.log('Waiting for state update...');
         await new Promise(resolve => setTimeout(resolve, 300));
         
         isProcessingRef.current = false;
         setIsProcessingImage(false);
+        console.log('Set processing flags FALSE');
+        console.log('=== IMAGE UPLOAD COMPLETE ===');
         toast.success("Receipt uploaded! You can now submit.", { id: "image-processing" });
       } catch (error) {
+        console.error('Image processing error:', error);
         toast.error("Failed to process image. Please try a smaller image.", { id: "image-processing" });
         isProcessingRef.current = false;
         setIsProcessingImage(false);
