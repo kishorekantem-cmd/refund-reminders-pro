@@ -268,11 +268,14 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    console.log('handleSignOut called, closing dialog');
-    setShowLogoutDialog(false);
-    console.log('Calling signOut function...');
-    await signOut();
-    console.log('signOut completed, user should be null now');
+    console.log('handleSignOut called');
+    try {
+      console.log('Calling signOut function...');
+      await signOut();
+      console.log('signOut completed, user should be null now');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const filteredReturns = returns.filter((item) => {
@@ -425,8 +428,17 @@ const Index = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSignOut}>Logout</AlertDialogAction>
+            <AlertDialogCancel onClick={() => console.log('Cancel clicked')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('Logout button clicked in dialog');
+                setShowLogoutDialog(false);
+                handleSignOut();
+              }}
+            >
+              Logout
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
