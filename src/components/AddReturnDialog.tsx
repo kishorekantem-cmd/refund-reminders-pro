@@ -382,7 +382,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           <Button 
             type="submit" 
             className="w-full bg-gradient-primary hover:opacity-90"
-            onClick={() => alert("Button clicked directly!")}
           >
             Add Return
           </Button>
