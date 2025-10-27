@@ -429,16 +429,16 @@ const Index = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => console.log('Cancel clicked')}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={(e) => {
-                e.preventDefault();
+            <Button
+              onClick={() => {
                 console.log('Logout button clicked in dialog');
                 setShowLogoutDialog(false);
                 handleSignOut();
               }}
+              className="touch-manipulation"
             >
               Logout
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
