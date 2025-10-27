@@ -37,10 +37,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("=== FORM SUBMIT STARTED ===");
     
-    alert("Submit button clicked!");
-    
-    toast.info("Step 1: Starting submission...", { id: "debug" });
+    toast.info("Starting submission...", { duration: 2000 });
     
     // Only check the ref, not the state (state updates may lag on mobile)
     if (isProcessingRef.current) {
@@ -48,7 +47,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       return;
     }
     
-    toast.info("Step 2: Validating form...", { id: "debug" });
+    console.log("Form data:", { storeName: formData.storeName, price: formData.price });
     
     // Validate with zod schema
     const validationResult = returnSchema.safeParse({
@@ -65,7 +64,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       return;
     }
 
-    toast.info("Step 3: Checking dates...", { id: "debug" });
+    console.log("Validation passed, checking dates...");
     
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
@@ -91,7 +90,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       }
     }
     
-    toast.info("Step 4: Saving to database...", { id: "debug" });
+    console.log("Dates validated, saving to database...");
     
     const newReturn = {
       store_name: formData.storeName.trim(),
@@ -117,7 +116,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     }
 
     if (data) {
-      toast.info("Step 5: Saving receipt image...", { id: "debug" });
+      console.log("Database save successful, processing receipt...");
       
       // Store image locally if present
       if (formData.receiptImage) {
@@ -148,7 +147,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         receiptImage: "",
       });
       setOpen(false);
-      toast.success("Return added successfully!", { id: "debug" });
+      toast.success("Return added successfully!");
+      console.log("=== FORM SUBMIT COMPLETE ===");
     }
   };
 
