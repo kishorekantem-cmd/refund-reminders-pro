@@ -274,6 +274,7 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
+    setShowLogoutDialog(false);
     try {
       console.log('Attempting to sign out...');
       await signOut();
