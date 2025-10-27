@@ -48,6 +48,14 @@ const Index = () => {
         .select('id, user_id, store_name, item_name, amount, purchase_date, return_date, returned_date, refund_received, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
 
+      // Check which returns have receipts (lightweight query)
+      const { data: receiptsData } = await supabase
+        .from('returns')
+        .select('id, receipt_image')
+        .not('receipt_image', 'is', null);
+
+      const receiptsMap = new Set(receiptsData?.map(r => r.id) || []);
+
       if (error) {
         toast.error('Failed to load returns');
         console.error('Database error:', error);
@@ -60,6 +68,7 @@ const Index = () => {
           returnedDate: item.returned_date ? new Date(item.returned_date) : null,
           price: Number(item.amount),
           receiptImage: null, // Will be loaded on demand when viewing details
+          hasReceipt: receiptsMap.has(item.id),
           status: item.refund_received ? "completed" : "pending",
           refundReceived: item.refund_received,
         }));
@@ -338,7 +347,9 @@ const Index = () => {
                 item={item}
                 onClick={() => {
                   setSelectedReturn(item);
-                  loadReceiptImage(item.id);
+                  if (item.hasReceipt) {
+                    loadReceiptImage(item.id);
+                  }
                 }}
               />
             ))
