@@ -315,7 +315,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm">
-                <Receipt className="w-6 h-6" />
+                <img src="/logo.png" alt="ReFundly" className="w-6 h-6 object-contain" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">ReFundly</h1>
