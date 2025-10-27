@@ -103,32 +103,71 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     onOpenChange(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Calculate new dimensions (max 1200px width for receipts)
+          const maxWidth = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 with compression (0.7 quality for good balance)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(compressedBase64);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 5MB to prevent database issues)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // Check file size (max 10MB before compression)
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error("Image too large. Please choose an image smaller than 5MB.");
-        e.target.value = ''; // Clear the input
+        toast.error("Image too large. Please choose an image smaller than 10MB.");
+        e.target.value = '';
         return;
       }
 
       setIsProcessingImage(true);
-      toast.loading("Processing image...", { id: "image-processing" });
+      toast.loading("Compressing image...", { id: "image-processing" });
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, receiptImage: reader.result as string });
+      try {
+        const compressedImage = await compressImage(file);
+        setFormData({ ...formData, receiptImage: compressedImage });
         setIsProcessingImage(false);
         toast.success("Receipt image uploaded", { id: "image-processing" });
-      };
-      reader.onerror = () => {
-        toast.error("Failed to read image file", { id: "image-processing" });
+      } catch (error) {
+        toast.error("Failed to process image", { id: "image-processing" });
         setIsProcessingImage(false);
-        e.target.value = ''; // Clear the input
-      };
-      reader.readAsDataURL(file);
+        e.target.value = '';
+      }
     }
   };
 
