@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ interface AddReturnDialogProps {
 export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const isProcessingRef = useRef(false);
   const [formData, setFormData] = useState({
     storeName: "",
     purchaseDate: "",
@@ -35,17 +36,19 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submit triggered', {
-      isProcessingImage,
-      hasImage: !!formData.receiptImage,
-      imageSize: formData.receiptImage?.length || 0
-    });
+    console.log('=== FORM SUBMIT START ===');
+    console.log('isProcessingImage:', isProcessingImage);
+    console.log('isProcessingRef.current:', isProcessingRef.current);
+    console.log('hasImage:', !!formData.receiptImage);
+    console.log('imageSize:', formData.receiptImage?.length || 0);
     
-    if (isProcessingImage) {
-      console.log('Image still processing, blocking submit');
+    if (isProcessingRef.current || isProcessingImage) {
+      console.log('BLOCKED: Image still processing');
       toast.error("Please wait for image to finish processing");
       return;
     }
+    
+    console.log('Proceeding with validation...');
     
     // Validate with zod schema
     const validationResult = returnSchema.safeParse({
@@ -62,6 +65,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       toast.error(errors[0]?.message || "Please check your inputs");
       return;
     }
+    
+    console.log('Validation passed, proceeding with date checks...');
 
     const purchaseDate = new Date(formData.purchaseDate);
     const returnedDate = new Date(formData.returnedDate);
@@ -87,6 +92,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       }
     }
 
+    console.log('All validations passed, calling onAdd...');
     onAdd({
       storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
@@ -165,7 +171,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('handleImageUpload called, file:', file?.name, file?.size);
+    console.log('=== IMAGE UPLOAD START ===');
+    console.log('File selected:', file?.name, 'Size:', file?.size);
     
     if (file) {
       // Check file size (max 10MB before compression)
@@ -177,23 +184,31 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         return;
       }
 
+      isProcessingRef.current = true;
       setIsProcessingImage(true);
-      console.log('Set isProcessingImage to true');
+      console.log('Set processing flags to true');
       toast.loading("Compressing image...", { id: "image-processing" });
       
       try {
+        console.log('Starting compression...');
         const compressedImage = await compressImage(file);
-        console.log('Compression successful, updating form data');
-        setFormData({ ...formData, receiptImage: compressedImage });
+        console.log('Compression complete, size:', compressedImage.length);
+        console.log('Updating form data...');
+        setFormData(prev => ({ ...prev, receiptImage: compressedImage }));
+        console.log('Form data updated');
+        isProcessingRef.current = false;
         setIsProcessingImage(false);
-        console.log('Set isProcessingImage to false');
+        console.log('Set processing flags to false');
         toast.success("Receipt image uploaded", { id: "image-processing" });
       } catch (error) {
         console.error('Compression failed:', error);
         toast.error("Failed to process image", { id: "image-processing" });
+        isProcessingRef.current = false;
         setIsProcessingImage(false);
         e.target.value = '';
       }
+    } else {
+      console.log('No file selected');
     }
   };
 
