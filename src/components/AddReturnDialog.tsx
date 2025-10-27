@@ -38,6 +38,8 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    alert("Submit button clicked!");
+    
     toast.info("Step 1: Starting submission...", { id: "debug" });
     
     // Only check the ref, not the state (state updates may lag on mobile)
