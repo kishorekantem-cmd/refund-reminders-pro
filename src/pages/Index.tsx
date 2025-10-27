@@ -329,11 +329,7 @@ const Index = () => {
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('=== LOGOUT BUTTON CLICKED ===');
-                  const confirmed = window.confirm('Are you sure you want to logout?');
-                  console.log('Confirmation result:', confirmed);
-                  if (confirmed) {
-                    handleSignOut();
-                  }
+                  setShowLogoutDialog(true);
                 }}
                 className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
                 aria-label="Logout"
@@ -424,6 +420,29 @@ const Index = () => {
         onOpenChange={(open) => !open && setEditingReturn(null)}
         onSave={handleEdit}
       />
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You'll need to sign in again to access your returns.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                setShowLogoutDialog(false);
+                handleSignOut();
+              }}
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
