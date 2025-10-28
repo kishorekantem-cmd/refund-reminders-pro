@@ -190,7 +190,6 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                 id="receipt"
                 type="file"
                 accept="image/*"
-                capture="environment"
                 onChange={handleImageUpload}
                 className="hidden"
               />
