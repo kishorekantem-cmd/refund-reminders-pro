@@ -104,7 +104,7 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
               Waiting for refund
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-destructive font-medium">
               Not yet returned
             </p>
           )}
