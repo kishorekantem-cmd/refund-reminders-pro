@@ -39,6 +39,31 @@ const Index = () => {
     }
   }, [user]);
 
+  // Check for return by date reminders
+  useEffect(() => {
+    if (returns.length === 0) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    returns.forEach(returnItem => {
+      if (returnItem.returnDate && returnItem.status === "pending") {
+        const returnByDate = new Date(returnItem.returnDate);
+        returnByDate.setHours(0, 0, 0, 0);
+        
+        // Show reminder if return by date is today or up to 3 days past
+        if (returnByDate >= threeDaysAgo && returnByDate <= today) {
+          toast.info(`Reminder: The return date for ${returnItem.storeName} is due or recently passed. Please complete your return to avoid missing refunds.`, {
+            duration: 5000,
+          });
+        }
+      }
+    });
+  }, [returns]);
+
   const fetchReturns = async () => {
     if (!user) {
       console.log('No user found, skipping fetch');
@@ -87,7 +112,7 @@ const Index = () => {
       const transformedReturns: ReturnItem[] = (data as DBReturnItem[]).map(item => ({
         id: item.id,
         storeName: item.store_name,
-        purchaseDate: new Date(item.purchase_date),
+        purchaseDate: item.purchase_date ? new Date(item.purchase_date) : null,
         returnDate: item.return_date ? new Date(item.return_date) : null,
         returnedDate: item.returned_date ? new Date(item.returned_date) : null,
         price: Number(item.amount),
@@ -139,7 +164,7 @@ const Index = () => {
         store_name: newReturn.storeName,
         item_name: newReturn.storeName,
         amount: newReturn.price,
-        purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
+        purchase_date: newReturn.purchaseDate ? newReturn.purchaseDate.toISOString().split('T')[0] : null,
         return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
         returned_date: newReturn.returnedDate.toISOString().split('T')[0],
         receipt_image: newReturn.receiptImage,
@@ -154,7 +179,7 @@ const Index = () => {
       const newItem: ReturnItem = {
         id: data.id,
         storeName: data.store_name,
-        purchaseDate: new Date(data.purchase_date),
+        purchaseDate: data.purchase_date ? new Date(data.purchase_date) : null,
         returnDate: data.return_date ? new Date(data.return_date) : null,
         returnedDate: new Date(data.returned_date),
         price: Number(data.amount),

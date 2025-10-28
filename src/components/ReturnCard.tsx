@@ -6,7 +6,7 @@ import { format } from "date-fns";
 export interface ReturnItem {
   id: string;
   storeName: string;
-  purchaseDate: Date;
+  purchaseDate: Date | null;
   returnDate: Date | null;
   returnedDate: Date | null;
   price: number;
@@ -40,9 +40,11 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
           </div>
           <div>
             <h3 className="font-semibold text-card-foreground">{item.storeName}</h3>
-            <p className="text-xs text-muted-foreground">
-              Purchased {format(item.purchaseDate, "MMM d, yyyy")}
-            </p>
+            {item.purchaseDate && (
+              <p className="text-xs text-muted-foreground">
+                Purchased {format(item.purchaseDate, "MMM d, yyyy")}
+              </p>
+            )}
           </div>
         </div>
         <Badge

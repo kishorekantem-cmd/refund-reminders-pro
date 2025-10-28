@@ -11,9 +11,12 @@ import { z } from "zod";
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
   price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
-  purchaseDate: z.string().min(1, "Purchase date is required"),
+  purchaseDate: z.string().optional(),
   returnDate: z.string().optional(),
   returnedDate: z.string().min(1, "Date returned is required"),
+}).refine((data) => data.purchaseDate || data.returnDate, {
+  message: "At least one of Purchase Date or Return By Date is required",
+  path: ["purchaseDate"],
 });
 
 interface AddReturnDialogProps {
@@ -49,33 +52,46 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       return;
     }
 
-    const purchaseDate = new Date(formData.purchaseDate);
-    const returnedDate = new Date(formData.returnedDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (returnedDate < purchaseDate) {
-      toast.error("Date returned must be on or after purchase date");
-      return;
-    }
-
-    if (returnedDate > today) {
-      toast.error("Date returned cannot be in the future");
-      return;
-    }
-
-    if (formData.returnDate) {
-      const returnDate = new Date(formData.returnDate);
+    if (formData.purchaseDate) {
+      const purchaseDate = new Date(formData.purchaseDate);
       
-      if (returnDate < purchaseDate) {
-        toast.error("Return by date must be on or after purchase date");
+      if (formData.returnedDate) {
+        const returnedDate = new Date(formData.returnedDate);
+        
+        if (returnedDate < purchaseDate) {
+          toast.error("Date returned must be on or after purchase date");
+          return;
+        }
+
+        if (returnedDate > today) {
+          toast.error("Date returned cannot be in the future");
+          return;
+        }
+      }
+
+      if (formData.returnDate && formData.purchaseDate) {
+        const returnDate = new Date(formData.returnDate);
+        
+        if (returnDate < purchaseDate) {
+          toast.error("Return by date must be on or after purchase date");
+          return;
+        }
+      }
+    } else if (formData.returnedDate) {
+      const returnedDate = new Date(formData.returnedDate);
+      
+      if (returnedDate > today) {
+        toast.error("Date returned cannot be in the future");
         return;
       }
     }
 
     onAdd({
       storeName: formData.storeName.trim(),
-      purchaseDate: new Date(formData.purchaseDate),
+      purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : null,
       returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
       returnedDate: new Date(formData.returnedDate),
       price: parseFloat(formData.price),
@@ -133,19 +149,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="purchaseDate">Purchase Date *</Label>
-              <Input
-                id="purchaseDate"
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="purchaseDate">Purchase Date</Label>
+            <Input
+              id="purchaseDate"
+              type="date"
+              value={formData.purchaseDate}
+              onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+            />
+          </div>
 
           <div className="space-y-2">
-            <Label htmlFor="returnDate">Return By (Optional)</Label>
+            <Label htmlFor="returnDate">Return By</Label>
             <Input
               id="returnDate"
               type="date"
@@ -154,6 +169,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             />
           </div>
         </div>
+        <p className="text-xs text-muted-foreground -mt-2">
+          * At least one of Purchase Date or Return By must be provided
+        </p>
 
         <div className="space-y-2">
           <Label htmlFor="returnedDate">Date Returned *</Label>
