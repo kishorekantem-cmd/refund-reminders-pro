@@ -188,6 +188,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 id="receipt"
                 type="file"
                 accept="image/*"
+                capture="environment"
                 onChange={handleImageUpload}
                 className="hidden"
               />
