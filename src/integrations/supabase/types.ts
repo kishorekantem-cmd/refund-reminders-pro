@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          has_receipt: boolean | null
           id: string
           item_name: string
           notes: string | null
@@ -49,7 +50,7 @@ export type Database = {
           receipt_image: string | null
           refund_received: boolean
           return_date: string | null
-          returned_date: string
+          returned_date: string | null
           store_name: string
           updated_at: string
           user_id: string
@@ -57,6 +58,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          has_receipt?: boolean | null
           id?: string
           item_name: string
           notes?: string | null
@@ -64,7 +66,7 @@ export type Database = {
           receipt_image?: string | null
           refund_received?: boolean
           return_date?: string | null
-          returned_date: string
+          returned_date?: string | null
           store_name: string
           updated_at?: string
           user_id: string
@@ -72,6 +74,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          has_receipt?: boolean | null
           id?: string
           item_name?: string
           notes?: string | null
@@ -79,7 +82,7 @@ export type Database = {
           receipt_image?: string | null
           refund_received?: boolean
           return_date?: string | null
-          returned_date?: string
+          returned_date?: string | null
           store_name?: string
           updated_at?: string
           user_id?: string

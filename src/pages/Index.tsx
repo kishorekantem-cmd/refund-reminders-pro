@@ -164,7 +164,7 @@ const Index = () => {
         store_name: newReturn.storeName,
         item_name: newReturn.storeName,
         amount: newReturn.price,
-        purchase_date: newReturn.purchaseDate ? newReturn.purchaseDate.toISOString().split('T')[0] : null,
+        purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
         return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
         returned_date: newReturn.returnedDate ? newReturn.returnedDate.toISOString().split('T')[0] : null,
         receipt_image: newReturn.receiptImage,
@@ -272,9 +272,9 @@ const Index = () => {
       .update({
         store_name: data.storeName,
         amount: data.price,
-        purchase_date: data.purchaseDate?.toISOString().split('T')[0],
+        purchase_date: data.purchaseDate ? data.purchaseDate.toISOString().split('T')[0] : null,
         return_date: data.returnDate ? data.returnDate.toISOString().split('T')[0] : null,
-        returned_date: data.returnedDate?.toISOString().split('T')[0],
+        returned_date: data.returnedDate ? data.returnedDate.toISOString().split('T')[0] : null,
         receipt_image: data.receiptImage,
       })
       .eq('id', id);

@@ -11,12 +11,9 @@ import { z } from "zod";
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
   price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
-  purchaseDate: z.string().optional(),
+  purchaseDate: z.string().min(1, "Purchase date is required"),
   returnDate: z.string().optional(),
   returnedDate: z.string().optional(),
-}).refine((data) => data.returnDate || data.returnedDate, {
-  message: "At least one of Return By or Date Returned is required",
-  path: ["returnDate"],
 });
 
 interface AddReturnDialogProps {
@@ -91,7 +88,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
     onAdd({
       storeName: formData.storeName.trim(),
-      purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : null,
+      purchaseDate: new Date(formData.purchaseDate),
       returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
       returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
@@ -150,12 +147,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
           <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="purchaseDate">Purchase Date</Label>
+            <Label htmlFor="purchaseDate">Purchase Date *</Label>
             <Input
               id="purchaseDate"
               type="date"
               value={formData.purchaseDate}
               onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+              required
             />
           </div>
 
@@ -169,9 +167,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground -mt-2">
-          * At least one of Return By or Date Returned must be provided
-        </p>
 
         <div className="space-y-2">
           <Label htmlFor="returnedDate">Date Returned</Label>

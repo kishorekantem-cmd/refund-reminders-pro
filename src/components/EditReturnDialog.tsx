@@ -13,7 +13,7 @@ const editReturnSchema = z.object({
   price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
   purchaseDate: z.string().min(1, "Purchase date is required"),
   returnDate: z.string().optional(),
-  returnedDate: z.string().min(1, "Date returned is required"),
+  returnedDate: z.string().optional(),
 });
 
 interface EditReturnDialogProps {
@@ -37,7 +37,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     if (item) {
       setFormData({
         storeName: item.storeName,
-        purchaseDate: item.purchaseDate.toISOString().split('T')[0],
+        purchaseDate: item.purchaseDate ? item.purchaseDate.toISOString().split('T')[0] : "",
         returnDate: item.returnDate ? item.returnDate.toISOString().split('T')[0] : "",
         returnedDate: item.returnedDate ? item.returnedDate.toISOString().split('T')[0] : "",
         price: item.price.toString(),
@@ -67,18 +67,21 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     }
 
     const purchaseDate = new Date(formData.purchaseDate);
-    const returnedDate = new Date(formData.returnedDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (returnedDate < purchaseDate) {
-      toast.error("Date returned must be on or after purchase date");
-      return;
-    }
+    if (formData.returnedDate) {
+      const returnedDate = new Date(formData.returnedDate);
+      
+      if (returnedDate < purchaseDate) {
+        toast.error("Date returned must be on or after purchase date");
+        return;
+      }
 
-    if (returnedDate > today) {
-      toast.error("Date returned cannot be in the future");
-      return;
+      if (returnedDate > today) {
+        toast.error("Date returned cannot be in the future");
+        return;
+      }
     }
 
     if (formData.returnDate) {
@@ -94,7 +97,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
       storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
       returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
-      returnedDate: new Date(formData.returnedDate),
+      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
     });
@@ -158,13 +161,12 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="returnedDate">Date Returned *</Label>
+            <Label htmlFor="returnedDate">Date Returned</Label>
             <Input
               id="returnedDate"
               type="date"
               value={formData.returnedDate}
               onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
-              required
             />
           </div>
 
