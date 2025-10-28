@@ -185,14 +185,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             <Label htmlFor="receipt">Receipt Image (Optional)</Label>
             <div className="flex items-center gap-2">
               <Input
-                id="receipt-gallery"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <Input
-                id="receipt-camera"
+                id="receipt"
                 type="file"
                 accept="image/*"
                 capture="environment"
@@ -202,20 +195,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => document.getElementById("receipt-gallery")?.click()}
-                className="flex-1"
+                onClick={() => document.getElementById("receipt")?.click()}
+                className="w-full"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Gallery
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("receipt-camera")?.click()}
-                className="flex-1"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Camera
+                {formData.receiptImage ? "Change Receipt" : "Upload Receipt"}
               </Button>
             </div>
             {formData.receiptImage && (
