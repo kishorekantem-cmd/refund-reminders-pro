@@ -13,10 +13,10 @@ const returnSchema = z.object({
   price: z.number().positive("Price must be greater than 0").max(999999.99, "Price must be less than 1,000,000"),
   purchaseDate: z.string().optional(),
   returnDate: z.string().optional(),
-  returnedDate: z.string().min(1, "Date returned is required"),
-}).refine((data) => data.purchaseDate || data.returnDate, {
-  message: "At least one of Purchase Date or Return By Date is required",
-  path: ["purchaseDate"],
+  returnedDate: z.string().optional(),
+}).refine((data) => data.returnDate || data.returnedDate, {
+  message: "At least one of Return By or Date Returned is required",
+  path: ["returnDate"],
 });
 
 interface AddReturnDialogProps {
@@ -93,7 +93,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       storeName: formData.storeName.trim(),
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : null,
       returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
-      returnedDate: new Date(formData.returnedDate),
+      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
       status: "pending",
@@ -170,17 +170,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           </div>
         </div>
         <p className="text-xs text-muted-foreground -mt-2">
-          * At least one of Purchase Date or Return By must be provided
+          * At least one of Return By or Date Returned must be provided
         </p>
 
         <div className="space-y-2">
-          <Label htmlFor="returnedDate">Date Returned *</Label>
+          <Label htmlFor="returnedDate">Date Returned</Label>
           <Input
             id="returnedDate"
             type="date"
             value={formData.returnedDate}
             onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
-            required
           />
         </div>
 

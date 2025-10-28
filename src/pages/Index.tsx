@@ -166,7 +166,7 @@ const Index = () => {
         amount: newReturn.price,
         purchase_date: newReturn.purchaseDate ? newReturn.purchaseDate.toISOString().split('T')[0] : null,
         return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
-        returned_date: newReturn.returnedDate.toISOString().split('T')[0],
+        returned_date: newReturn.returnedDate ? newReturn.returnedDate.toISOString().split('T')[0] : null,
         receipt_image: newReturn.receiptImage,
         refund_received: false,
       })
@@ -181,7 +181,7 @@ const Index = () => {
         storeName: data.store_name,
         purchaseDate: data.purchase_date ? new Date(data.purchase_date) : null,
         returnDate: data.return_date ? new Date(data.return_date) : null,
-        returnedDate: new Date(data.returned_date),
+        returnedDate: data.returned_date ? new Date(data.returned_date) : null,
         price: Number(data.amount),
         receiptImage: data.receipt_image,
         status: "pending",
