@@ -93,13 +93,19 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
         <div className="mt-3 pt-3 border-t border-border">
           {needsRefundReminder ? (
             <p className="text-xs text-warning font-medium">
-              ⚠️ To check whether returned amount is received ({daysSinceReturned} days since return)
+              ⚠️ Check refund status ({daysSinceReturned} days since return)
+            </p>
+          ) : item.refundReceived ? (
+            <p className="text-xs text-success font-medium">
+              ✓ Refund confirmed
+            </p>
+          ) : item.returnedDate ? (
+            <p className="text-xs text-muted-foreground">
+              Waiting for refund
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              {item.refundReceived
-                ? "✓ Refund confirmed"
-                : "Waiting for refund confirmation"}
+              Not yet returned
             </p>
           )}
         </div>
