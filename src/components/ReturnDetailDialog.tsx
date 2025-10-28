@@ -40,9 +40,11 @@ export const ReturnDetailDialog = ({
     onOpenChange(false);
   };
 
-  const daysSinceReturned = Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceReturned = item.returnedDate 
+    ? Math.floor((new Date().getTime() - item.returnedDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
-  const needsRefundReminder = !item.refundReceived && daysSinceReturned >= 3;
+  const needsRefundReminder = !item.refundReceived && item.returnedDate && daysSinceReturned >= 3;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,25 +78,29 @@ export const ReturnDetailDialog = ({
           </div>
 
           <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-secondary/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Purchase Date</span>
+            {item.purchaseDate && (
+              <div className="p-4 rounded-lg bg-secondary/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Purchase Date</span>
+                </div>
+                <p className="text-lg font-semibold">
+                  {format(item.purchaseDate, "MMMM d, yyyy")}
+                </p>
               </div>
-              <p className="text-lg font-semibold">
-                {format(item.purchaseDate, "MMMM d, yyyy")}
-              </p>
-            </div>
+            )}
 
-            <div className="p-4 rounded-lg bg-secondary/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-success" />
-                <span className="text-sm font-medium">Date Returned</span>
+            {item.returnedDate && (
+              <div className="p-4 rounded-lg bg-secondary/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-success" />
+                  <span className="text-sm font-medium">Date Returned</span>
+                </div>
+                <p className="text-lg font-semibold">
+                  {format(item.returnedDate, "MMMM d, yyyy")}
+                </p>
               </div>
-              <p className="text-lg font-semibold">
-                {format(item.returnedDate, "MMMM d, yyyy")}
-              </p>
-            </div>
+            )}
 
             {item.returnDate && (
               <div className="p-4 rounded-lg bg-secondary/50">
