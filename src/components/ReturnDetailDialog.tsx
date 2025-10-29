@@ -89,7 +89,7 @@ export const ReturnDetailDialog = ({
             {item.purchaseDate && (
               <div className="p-4 rounded-lg bg-secondary/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Purchase Date</span>
                 </div>
                 <p className="text-lg font-semibold">
@@ -117,7 +117,7 @@ export const ReturnDetailDialog = ({
             {item.returnDate && (
               <div className="p-4 rounded-lg bg-secondary/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Return Deadline (Optional)</span>
                 </div>
                 <p className="text-lg font-semibold">
