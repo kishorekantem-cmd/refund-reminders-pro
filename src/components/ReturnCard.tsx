@@ -32,7 +32,8 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
     ? Math.ceil((item.returnDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const shouldShowNotReturned = item.purchaseDate && item.returnDate && daysUntilReturn !== null && daysUntilReturn <= 3 && !item.returnedDate;
+  const isOverdue = item.purchaseDate && item.returnDate && daysUntilReturn !== null && daysUntilReturn < 0 && !item.returnedDate;
+  const shouldShowNotReturned = item.purchaseDate && item.returnDate && daysUntilReturn !== null && daysUntilReturn <= 3 && daysUntilReturn >= 0 && !item.returnedDate;
 
   return (
     <Card
@@ -108,6 +109,10 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
           ) : item.returnedDate ? (
             <p className="text-xs text-muted-foreground">
               Waiting for refund
+            </p>
+          ) : isOverdue ? (
+            <p className="text-xs text-destructive font-medium">
+              Return Overdue
             </p>
           ) : shouldShowNotReturned ? (
             <p className="text-xs text-destructive font-medium">
