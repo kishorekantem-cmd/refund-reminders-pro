@@ -216,7 +216,10 @@ export const ReturnDetailDialog = ({
           </AlertDialogHeader>
           
           {!item.returnedDate && (
-            <div className="flex justify-center py-4">
+            <div className="flex flex-col gap-2 py-4">
+              <p className="text-sm text-center text-muted-foreground mb-2">
+                Select the date when you returned this item:
+              </p>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -230,7 +233,7 @@ export const ReturnDetailDialog = ({
                     {selectedReturnDate ? format(selectedReturnDate, "PPP") : "Select date returned"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50" align="center">
+                <PopoverContent className="w-auto p-0 z-[100]" align="start" side="bottom" sideOffset={8}>
                   <Calendar
                     mode="single"
                     selected={selectedReturnDate}
