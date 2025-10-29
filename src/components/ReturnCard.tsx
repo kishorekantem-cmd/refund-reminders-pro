@@ -107,16 +107,16 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
               ✓ Refund confirmed
             </p>
           ) : item.returnedDate ? (
-            <p className="text-xs text-muted-foreground">
-              Waiting for refund
+            <p className="text-xs text-muted-foreground font-medium">
+              💰 Waiting for refund
             </p>
           ) : isOverdue ? (
             <p className="text-xs text-destructive font-medium">
-              Return Overdue
+              ⚠️ Return Overdue
             </p>
           ) : shouldShowNotReturned ? (
-            <p className="text-xs text-destructive font-medium">
-              Pending Return
+            <p className="text-xs text-primary font-medium">
+              ⏳ Pending Return
             </p>
           ) : null}
         </div>
