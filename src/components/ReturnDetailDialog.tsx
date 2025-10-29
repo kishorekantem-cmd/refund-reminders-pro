@@ -200,36 +200,36 @@ export const ReturnDetailDialog = ({
       </DialogContent>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {!item.returnedDate ? "Add Date Returned" : "Confirm Refund Received"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {!item.returnedDate 
-                ? "Please select the date when you returned the item. This will mark the item as returned and allow you to track the refund."
+                ? "Please select the date when you returned the item."
                 : "Are you sure you want to mark this refund as received? This will complete the return and stop any reminders."
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
           
           {!item.returnedDate && (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <p className="text-sm text-center text-muted-foreground">
-                Select the date when you returned this item:
-              </p>
-              <div className="border rounded-lg">
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="w-full border rounded-lg overflow-hidden bg-background">
                 <Calendar
                   mode="single"
                   selected={selectedReturnDate}
                   onSelect={setSelectedReturnDate}
                   initialFocus
+                  className="w-full"
                 />
               </div>
               {selectedReturnDate && (
-                <p className="text-sm font-medium">
-                  Selected: {format(selectedReturnDate, "MMMM d, yyyy")}
-                </p>
+                <div className="w-full p-3 bg-primary/10 rounded-md text-center">
+                  <p className="text-sm font-medium">
+                    Selected: {format(selectedReturnDate, "MMMM d, yyyy")}
+                  </p>
+                </div>
               )}
             </div>
           )}
