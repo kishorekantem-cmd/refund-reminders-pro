@@ -39,30 +39,6 @@ const Index = () => {
     }
   }, [user]);
 
-  // Check for return by date reminders
-  useEffect(() => {
-    if (returns.length === 0) return;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const threeDaysAgo = new Date(today);
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    
-    returns.forEach(returnItem => {
-      if (returnItem.returnDate && returnItem.status === "pending") {
-        const returnByDate = new Date(returnItem.returnDate);
-        returnByDate.setHours(0, 0, 0, 0);
-        
-        // Show reminder if return by date is today or up to 3 days past
-        if (returnByDate >= threeDaysAgo && returnByDate <= today) {
-          toast.info(`Reminder: The return date for ${returnItem.storeName} is due or recently passed. Please complete your return to avoid missing refunds.`, {
-            duration: 5000,
-          });
-        }
-      }
-    });
-  }, [returns]);
 
   const fetchReturns = async () => {
     if (!user) {
