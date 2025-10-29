@@ -28,6 +28,12 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
 
   const needsRefundReminder = !item.refundReceived && item.returnedDate && daysSinceReturned >= 3;
 
+  const daysUntilReturn = item.returnDate 
+    ? Math.ceil((item.returnDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const shouldShowNotReturned = item.purchaseDate && item.returnDate && daysUntilReturn !== null && daysUntilReturn <= 3 && !item.returnedDate;
+
   return (
     <Card
       className={`p-4 cursor-pointer hover:shadow-lg transition-all duration-300 bg-gradient-card border-border ${needsRefundReminder ? 'border-l-4 border-l-warning' : ''}`}
@@ -103,11 +109,11 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
             <p className="text-xs text-muted-foreground">
               Waiting for refund
             </p>
-          ) : (
+          ) : shouldShowNotReturned ? (
             <p className="text-xs text-destructive font-medium">
               Not yet returned
             </p>
-          )}
+          ) : null}
         </div>
       )}
     </Card>
