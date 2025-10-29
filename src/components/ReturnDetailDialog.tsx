@@ -100,17 +100,21 @@ export const ReturnDetailDialog = ({
               </div>
             )}
 
-            {item.returnedDate && (
-              <div className="p-4 rounded-lg bg-secondary/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">Date Returned</span>
-                </div>
+            <div className="p-4 rounded-lg bg-secondary/50">
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarIcon className={`w-4 h-4 ${item.returnedDate ? 'text-success' : 'text-muted-foreground'}`} />
+                <span className="text-sm font-medium">Date Returned</span>
+              </div>
+              {item.returnedDate ? (
                 <p className="text-lg font-semibold">
                   {format(item.returnedDate, "MMMM d, yyyy")}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Not yet added - Use button below to add
+                </p>
+              )}
+            </div>
 
             {item.returnDate && (
               <div className="p-4 rounded-lg bg-secondary/50">
