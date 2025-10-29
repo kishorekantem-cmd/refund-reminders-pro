@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Calendar, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ReturnItem } from "./ReturnCard";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ReturnDetailDialogProps {
   item: ReturnItem | null;
@@ -30,13 +33,20 @@ export const ReturnDetailDialog = ({
   onDelete,
 }: ReturnDetailDialogProps) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedReturnDate, setSelectedReturnDate] = useState<Date | undefined>(undefined);
   
   if (!item) return null;
 
   const handleConfirmRefund = () => {
+    // If there's no returned date, add it first
+    if (!item.returnedDate && selectedReturnDate) {
+      onMarkReturned(item.id, selectedReturnDate);
+    }
+    
     onToggleRefund(item.id);
     onMarkComplete(item.id);
     setShowConfirmDialog(false);
+    setSelectedReturnDate(undefined);
     onOpenChange(false);
   };
 
@@ -161,7 +171,7 @@ export const ReturnDetailDialog = ({
                 onClick={() => setShowConfirmDialog(true)}
                 className="w-full bg-gradient-success hover:opacity-90"
               >
-                Confirm Refund Received
+                {!item.returnedDate ? "Confirm Returned & Add Date Returned" : "Confirm Refund Received"}
               </Button>
             )}
             <Button
@@ -190,15 +200,51 @@ export const ReturnDetailDialog = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Refund Received</AlertDialogTitle>
+            <AlertDialogTitle>
+              {!item.returnedDate ? "Add Date Returned" : "Confirm Refund Received"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to mark this refund as received? This will complete the return and stop any reminders.
+              {!item.returnedDate 
+                ? "Please select the date when you returned the item. This will mark the item as returned and allow you to track the refund."
+                : "Are you sure you want to mark this refund as received? This will complete the return and stop any reminders."
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          {!item.returnedDate && (
+            <div className="flex justify-center py-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedReturnDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedReturnDate ? format(selectedReturnDate, "PPP") : "Select date returned"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedReturnDate}
+                    onSelect={setSelectedReturnDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+          
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRefund}>
-              Confirm Refund Received
+            <AlertDialogCancel onClick={() => setSelectedReturnDate(undefined)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmRefund}
+              disabled={!item.returnedDate && !selectedReturnDate}
+            >
+              {!item.returnedDate ? "Confirm Returned" : "Confirm Refund Received"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
