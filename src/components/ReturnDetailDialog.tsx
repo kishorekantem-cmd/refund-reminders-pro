@@ -230,7 +230,7 @@ export const ReturnDetailDialog = ({
                     {selectedReturnDate ? format(selectedReturnDate, "PPP") : "Select date returned"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 z-50" align="center">
                   <Calendar
                     mode="single"
                     selected={selectedReturnDate}
