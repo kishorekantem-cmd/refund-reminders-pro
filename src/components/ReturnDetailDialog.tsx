@@ -5,11 +5,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Calendar as CalendarIcon, DollarSign, Store, CheckCircle2, XCircle, Pencil } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ReturnItem } from "./ReturnCard";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface ReturnDetailDialogProps {
   item: ReturnItem | null;
@@ -216,32 +214,23 @@ export const ReturnDetailDialog = ({
           </AlertDialogHeader>
           
           {!item.returnedDate && (
-            <div className="flex flex-col gap-2 py-4">
-              <p className="text-sm text-center text-muted-foreground mb-2">
+            <div className="flex flex-col items-center gap-3 py-4">
+              <p className="text-sm text-center text-muted-foreground">
                 Select the date when you returned this item:
               </p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !selectedReturnDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedReturnDate ? format(selectedReturnDate, "PPP") : "Select date returned"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                  <Calendar
-                    mode="single"
-                    selected={selectedReturnDate}
-                    onSelect={setSelectedReturnDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="border rounded-lg">
+                <Calendar
+                  mode="single"
+                  selected={selectedReturnDate}
+                  onSelect={setSelectedReturnDate}
+                  initialFocus
+                />
+              </div>
+              {selectedReturnDate && (
+                <p className="text-sm font-medium">
+                  Selected: {format(selectedReturnDate, "MMMM d, yyyy")}
+                </p>
+              )}
             </div>
           )}
           
