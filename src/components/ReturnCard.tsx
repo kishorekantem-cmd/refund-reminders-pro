@@ -111,7 +111,7 @@ export const ReturnCard = ({ item, onClick }: ReturnCardProps) => {
             </p>
           ) : shouldShowNotReturned ? (
             <p className="text-xs text-destructive font-medium">
-              Not yet returned
+              Pending Return
             </p>
           ) : null}
         </div>
