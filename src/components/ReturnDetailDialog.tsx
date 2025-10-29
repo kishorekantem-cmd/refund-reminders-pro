@@ -168,12 +168,20 @@ export const ReturnDetailDialog = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            {item.status === "pending" && !item.refundReceived && (
+            {item.status === "pending" && !item.refundReceived && !item.returnedDate && (
               <Button
                 onClick={() => setShowConfirmDialog(true)}
                 className="w-full bg-gradient-success hover:opacity-90"
               >
-                {!item.returnedDate ? "Confirm Returned & Add Date Returned" : "Confirm Refund Received"}
+                Confirm Returned & Add Date Returned
+              </Button>
+            )}
+            {item.returnedDate && item.returnDate && !item.refundReceived && (
+              <Button
+                onClick={() => setShowConfirmDialog(true)}
+                className="w-full bg-gradient-success hover:opacity-90"
+              >
+                Confirm Refund Received
               </Button>
             )}
             <Button
