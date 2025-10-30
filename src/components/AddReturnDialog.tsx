@@ -52,8 +52,20 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Validate Date Returned cannot be in the future
+    if (formData.returnedDate) {
+      const returnedDate = new Date(formData.returnedDate);
+      returnedDate.setHours(0, 0, 0, 0);
+      
+      if (returnedDate > today) {
+        toast.error("Date returned cannot be in the future");
+        return;
+      }
+    }
+
     if (formData.purchaseDate) {
       const purchaseDate = new Date(formData.purchaseDate);
+      purchaseDate.setHours(0, 0, 0, 0);
       
       if (purchaseDate > today) {
         toast.error("Purchase date cannot be in the future");
@@ -62,32 +74,22 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       
       if (formData.returnedDate) {
         const returnedDate = new Date(formData.returnedDate);
+        returnedDate.setHours(0, 0, 0, 0);
         
         if (returnedDate < purchaseDate) {
           toast.error("Date returned must be on or after purchase date");
           return;
         }
-
-        if (returnedDate > today) {
-          toast.error("Date returned cannot be in the future");
-          return;
-        }
       }
 
-      if (formData.returnDate && formData.purchaseDate) {
+      if (formData.returnDate) {
         const returnDate = new Date(formData.returnDate);
+        returnDate.setHours(0, 0, 0, 0);
         
         if (returnDate < purchaseDate) {
           toast.error("Return by date must be on or after purchase date");
           return;
         }
-      }
-    } else if (formData.returnedDate) {
-      const returnedDate = new Date(formData.returnedDate);
-      
-      if (returnedDate > today) {
-        toast.error("Date returned cannot be in the future");
-        return;
       }
     }
 
