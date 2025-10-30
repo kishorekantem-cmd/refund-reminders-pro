@@ -39,8 +39,13 @@ export const ReturnDetailDialog = ({
     // If there's no returned date, add it first
     if (!item.returnedDate && selectedReturnDate) {
       onMarkReturned(item.id, selectedReturnDate);
+      setShowConfirmDialog(false);
+      setSelectedReturnDate(undefined);
+      // Don't close the main dialog - let user see the updated date
+      return;
     }
     
+    // If we're confirming refund received
     onToggleRefund(item.id);
     onMarkComplete(item.id);
     setShowConfirmDialog(false);
