@@ -233,7 +233,10 @@ export const ReturnDetailDialog = ({
                   mode="single"
                   selected={selectedReturnDate}
                   onSelect={setSelectedReturnDate}
-                  disabled={(date) => date > new Date()}
+                  disabled={(date) => 
+                    date > new Date() || 
+                    (item.purchaseDate && date < item.purchaseDate)
+                  }
                   initialFocus
                   className="w-full"
                 />
