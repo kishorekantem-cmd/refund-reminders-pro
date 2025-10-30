@@ -70,6 +70,11 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    if (purchaseDate > today) {
+      toast.error("Purchase date cannot be in the future");
+      return;
+    }
+
     if (formData.returnedDate) {
       const returnedDate = new Date(formData.returnedDate);
       

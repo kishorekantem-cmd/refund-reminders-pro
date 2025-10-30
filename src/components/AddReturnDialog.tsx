@@ -55,6 +55,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     if (formData.purchaseDate) {
       const purchaseDate = new Date(formData.purchaseDate);
       
+      if (purchaseDate > today) {
+        toast.error("Purchase date cannot be in the future");
+        return;
+      }
+      
       if (formData.returnedDate) {
         const returnedDate = new Date(formData.returnedDate);
         
