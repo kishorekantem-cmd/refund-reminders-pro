@@ -167,7 +167,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                 type="date"
                 value={formData.returnDate}
                 onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-                min={formData.purchaseDate || undefined}
+                min={new Date().toISOString().split('T')[0]}
               />
             </div>
           </div>
