@@ -178,7 +178,7 @@ export const ReturnDetailDialog = ({
                 onClick={() => setShowConfirmDialog(true)}
                 className="w-full bg-gradient-success hover:opacity-90"
               >
-                Confirm Returned & Add Date Returned
+                Mark as Returned
               </Button>
             )}
             {item.returnedDate && item.returnDate && !item.refundReceived && (
