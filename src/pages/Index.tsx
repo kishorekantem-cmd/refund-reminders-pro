@@ -233,11 +233,18 @@ const Index = () => {
     if (error) {
       toast.error('Failed to mark as returned');
     } else {
-      setReturns(returns.map(r => 
+      const updatedReturns = returns.map(r => 
         r.id === id 
           ? { ...r, returnedDate: date }
           : r
-      ));
+      );
+      setReturns(updatedReturns);
+      
+      // Update selectedReturn if it's the item being updated
+      if (selectedReturn && selectedReturn.id === id) {
+        setSelectedReturn({ ...selectedReturn, returnedDate: date });
+      }
+      
       toast.success("Marked as returned!");
     }
   };
