@@ -234,9 +234,21 @@ export const ReturnDetailDialog = ({
                   selected={selectedReturnDate}
                   onSelect={setSelectedReturnDate}
                   disabled={(date) => {
-                    const today = new Date();
-                    today.setHours(23, 59, 59, 999);
-                    return date > today || (item.purchaseDate && date < item.purchaseDate);
+                    const dateOnly = new Date(date);
+                    dateOnly.setHours(0, 0, 0, 0);
+                    
+                    const todayOnly = new Date();
+                    todayOnly.setHours(0, 0, 0, 0);
+                    
+                    if (dateOnly > todayOnly) return true;
+                    
+                    if (item.purchaseDate) {
+                      const purchaseOnly = new Date(item.purchaseDate);
+                      purchaseOnly.setHours(0, 0, 0, 0);
+                      if (dateOnly < purchaseOnly) return true;
+                    }
+                    
+                    return false;
                   }}
                   initialFocus
                   className="w-full"
