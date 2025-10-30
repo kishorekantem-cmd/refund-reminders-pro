@@ -160,6 +160,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               type="date"
               value={formData.purchaseDate}
               onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+              max={new Date().toISOString().split('T')[0]}
               required
             />
           </div>
@@ -182,6 +183,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             type="date"
             value={formData.returnedDate}
             onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
+            max={new Date().toISOString().split('T')[0]}
           />
         </div>
 
