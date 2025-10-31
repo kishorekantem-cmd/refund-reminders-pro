@@ -109,36 +109,30 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       }
     }
 
-    // Check monthly return limit
+    // Check return limit (25 per user)
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
         const { count, error: countError } = await supabase
           .from('returns')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .gte('created_at', firstDayOfMonth.toISOString())
-          .lte('created_at', lastDayOfMonth.toISOString());
+          .eq('user_id', user.id);
 
         if (countError) {
           console.error('Error checking return count:', countError);
-          toast.error("Failed to verify monthly limit. Please try again.");
+          toast.error("Failed to verify return limit. Please try again.");
           return;
         }
 
         if (count !== null && count >= 25) {
-          toast.error("You've reached your monthly limit of 25 returns. Please delete old returns to add new ones.");
+          toast.error("Maximum return limit reached (25 per user). Please delete old returns to add new ones.");
           return;
         }
       }
     } catch (error) {
-      console.error('Error checking monthly limit:', error);
-      toast.error("Failed to verify monthly limit. Please try again.");
+      console.error('Error checking return limit:', error);
+      toast.error("Failed to verify return limit. Please try again.");
       return;
     }
 
