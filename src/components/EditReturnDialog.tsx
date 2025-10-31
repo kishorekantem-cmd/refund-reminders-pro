@@ -30,35 +30,26 @@ interface EditReturnDialogProps {
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
   const [formData, setFormData] = useState({
     storeName: "",
-    purchaseDate: "",
-    returnDate: "",
-    returnedDate: "",
     price: "",
     receiptImage: "",
   });
+  const [purchaseDate, setPurchaseDate] = useState<Date | undefined>();
   const [returnByDate, setReturnByDate] = useState<Date | undefined>();
-  const [calendarOpen, setCalendarOpen] = useState(false);
-
-  // Get today's date in local timezone for validation
-  const getTodayLocalDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const [dateReturned, setDateReturned] = useState<Date | undefined>();
+  const [purchaseCalendarOpen, setPurchaseCalendarOpen] = useState(false);
+  const [returnByCalendarOpen, setReturnByCalendarOpen] = useState(false);
+  const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (item) {
       setFormData({
         storeName: item.storeName,
-        purchaseDate: item.purchaseDate ? item.purchaseDate.toISOString().split('T')[0] : "",
-        returnDate: item.returnDate ? item.returnDate.toISOString().split('T')[0] : "",
-        returnedDate: item.returnedDate ? item.returnedDate.toISOString().split('T')[0] : "",
         price: item.price.toString(),
         receiptImage: item.receiptImage || "",
       });
+      setPurchaseDate(item.purchaseDate ? new Date(item.purchaseDate) : undefined);
       setReturnByDate(item.returnDate ? new Date(item.returnDate) : undefined);
+      setDateReturned(item.returnedDate ? new Date(item.returnedDate) : undefined);
     }
   }, [item]);
 
@@ -67,13 +58,23 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     
     if (!item) return;
 
+    if (!purchaseDate) {
+      toast.error("Purchase date is required");
+      return;
+    }
+
+    // Format dates to yyyy-MM-dd for validation
+    const purchaseDateStr = format(purchaseDate, "yyyy-MM-dd");
+    const returnDateStr = returnByDate ? format(returnByDate, "yyyy-MM-dd") : undefined;
+    const returnedDateStr = dateReturned ? format(dateReturned, "yyyy-MM-dd") : undefined;
+
     // Validate with zod schema
     const validationResult = editReturnSchema.safeParse({
       storeName: formData.storeName,
       price: parseFloat(formData.price),
-      purchaseDate: formData.purchaseDate,
-      returnDate: formData.returnDate,
-      returnedDate: formData.returnedDate,
+      purchaseDate: purchaseDateStr,
+      returnDate: returnDateStr,
+      returnedDate: returnedDateStr,
     });
 
     if (!validationResult.success) {
@@ -85,33 +86,31 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const purchaseDate = new Date(formData.purchaseDate);
-    purchaseDate.setHours(0, 0, 0, 0);
+    const purchaseDateCheck = new Date(purchaseDate);
+    purchaseDateCheck.setHours(0, 0, 0, 0);
 
-    if (purchaseDate > today) {
+    if (purchaseDateCheck > today) {
       toast.error("Purchase date cannot be in the future");
       return;
     }
 
     // Validate Date Returned cannot be in the future
-    if (formData.returnedDate) {
-      const returnedDate = new Date(formData.returnedDate);
-      returnedDate.setHours(0, 0, 0, 0);
+    if (dateReturned) {
+      const returnedDateCheck = new Date(dateReturned);
+      returnedDateCheck.setHours(0, 0, 0, 0);
       
-      if (returnedDate > today) {
+      if (returnedDateCheck > today) {
         toast.error("Date returned cannot be in the future");
         return;
       }
       
-      if (returnedDate < purchaseDate) {
+      if (returnedDateCheck < purchaseDateCheck) {
         toast.error("Date returned must be on or after purchase date");
         return;
       }
     }
 
     if (returnByDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const selectedDate = new Date(returnByDate);
       selectedDate.setHours(0, 0, 0, 0);
       
@@ -120,10 +119,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         return;
       }
       
-      const purchaseDate = new Date(formData.purchaseDate);
-      purchaseDate.setHours(0, 0, 0, 0);
-      
-      if (selectedDate < purchaseDate) {
+      if (selectedDate < purchaseDateCheck) {
         toast.error("Return by date must be on or after purchase date");
         return;
       }
@@ -131,9 +127,9 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
     onSave(item.id, {
       storeName: formData.storeName.trim(),
-      purchaseDate: new Date(formData.purchaseDate),
+      purchaseDate: new Date(purchaseDate),
       returnDate: returnByDate || null,
-      returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
+      returnedDate: dateReturned ? new Date(dateReturned) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
     });
@@ -176,19 +172,37 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="purchaseDate">Purchase Date *</Label>
-              <Input
-                id="purchaseDate"
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                max={getTodayLocalDateString()}
-                required
-              />
+              <Popover open={purchaseCalendarOpen} onOpenChange={setPurchaseCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !purchaseDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {purchaseDate ? format(purchaseDate, "MM/dd/yyyy") : <span>mm/dd/yyyy</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={purchaseDate}
+                    onSelect={(date) => {
+                      setPurchaseDate(date);
+                      setPurchaseCalendarOpen(false);
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="returnDate">Return By (Optional)</Label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <Popover open={returnByCalendarOpen} onOpenChange={setReturnByCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -207,7 +221,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     selected={returnByDate}
                     onSelect={(date) => {
                       setReturnByDate(date);
-                      setCalendarOpen(false);
+                      setReturnByCalendarOpen(false);
                     }}
                     disabled={(date) => {
                       const today = new Date();
@@ -225,13 +239,32 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
           <div className="space-y-2">
             <Label htmlFor="returnedDate">Date Returned</Label>
-            <Input
-              id="returnedDate"
-              type="date"
-              value={formData.returnedDate}
-              onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
-              max={getTodayLocalDateString()}
-            />
+            <Popover open={returnedCalendarOpen} onOpenChange={setReturnedCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateReturned && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateReturned ? format(dateReturned, "MM/dd/yyyy") : <span>mm/dd/yyyy</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateReturned}
+                  onSelect={(date) => {
+                    setDateReturned(date);
+                    setReturnedCalendarOpen(false);
+                  }}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
