@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -38,7 +39,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [returnByCalendarOpen, setReturnByCalendarOpen] = useState(false);
   const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!purchaseDate) {
@@ -106,6 +107,39 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         toast.error("Return by date must be on or after purchase date");
         return;
       }
+    }
+
+    // Check monthly return limit
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+        const { count, error: countError } = await supabase
+          .from('returns')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', firstDayOfMonth.toISOString())
+          .lte('created_at', lastDayOfMonth.toISOString());
+
+        if (countError) {
+          console.error('Error checking return count:', countError);
+          toast.error("Failed to verify monthly limit. Please try again.");
+          return;
+        }
+
+        if (count !== null && count >= 25) {
+          toast.error("You've reached your monthly limit of 25 returns. Please delete old returns to add new ones.");
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking monthly limit:', error);
+      toast.error("Failed to verify monthly limit. Please try again.");
+      return;
     }
 
     onAdd({
