@@ -37,6 +37,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     receiptImage: "",
   });
   const [returnByDate, setReturnByDate] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -178,7 +179,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
             <div className="space-y-2">
               <Label htmlFor="returnDate">Return By (Optional)</Label>
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -195,7 +196,10 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                   <Calendar
                     mode="single"
                     selected={returnByDate}
-                    onSelect={setReturnByDate}
+                    onSelect={(date) => {
+                      setReturnByDate(date);
+                      setCalendarOpen(false);
+                    }}
                     disabled={(date) => {
                       const today = new Date();
                       const checkDate = new Date(date);

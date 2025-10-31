@@ -35,6 +35,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     receiptImage: "",
   });
   const [returnByDate, setReturnByDate] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +181,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
 
           <div className="space-y-2">
             <Label>Return By</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -197,7 +198,10 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 <Calendar
                   mode="single"
                   selected={returnByDate}
-                  onSelect={setReturnByDate}
+                  onSelect={(date) => {
+                    setReturnByDate(date);
+                    setCalendarOpen(false);
+                  }}
                   disabled={(date) => {
                     const today = new Date();
                     const checkDate = new Date(date);
