@@ -56,17 +56,32 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         const originalPurchaseDate = new Date(item.purchaseDate);
         originalPurchaseDate.setHours(0, 0, 0, 0);
         
-        if (originalPurchaseDate.getTime() > today.getTime()) {
-          setPurchaseDate(new Date(today));
-        } else {
+        // Only set purchase date if it's not in the future
+        if (originalPurchaseDate.getTime() <= today.getTime()) {
           setPurchaseDate(new Date(originalPurchaseDate));
+        } else {
+          // For future dates, set to today
+          setPurchaseDate(new Date(today));
         }
       } else {
         setPurchaseDate(undefined);
       }
       
+      // Cap returned date to today if it's in the future
+      if (item.returnedDate) {
+        const originalReturnedDate = new Date(item.returnedDate);
+        originalReturnedDate.setHours(0, 0, 0, 0);
+        
+        if (originalReturnedDate.getTime() <= today.getTime()) {
+          setDateReturned(new Date(originalReturnedDate));
+        } else {
+          setDateReturned(new Date(today));
+        }
+      } else {
+        setDateReturned(undefined);
+      }
+      
       setReturnByDate(item.returnDate ? new Date(item.returnDate) : undefined);
-      setDateReturned(item.returnedDate ? new Date(item.returnedDate) : undefined);
     }
   }, [item]);
 
@@ -218,7 +233,6 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                         return tomorrow;
                       })()
                     }}
-                    defaultMonth={new Date()}
                     initialFocus
                   />
                 </PopoverContent>
@@ -293,7 +307,6 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                       return tomorrow;
                     })()
                   }}
-                  defaultMonth={new Date()}
                   initialFocus
                 />
               </PopoverContent>
