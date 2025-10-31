@@ -28,8 +28,6 @@ interface EditReturnDialogProps {
 }
 
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
-  console.log("EditReturnDialog component render, item:", item, "open:", open);
-  
   const [formData, setFormData] = useState({
     storeName: "",
     price: "",
@@ -43,44 +41,27 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
   const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
 
   useEffect(() => {
-    console.log("EditReturnDialog useEffect triggered, item:", item);
-    
     if (item) {
-      console.log("EditReturnDialog - Setting form data for item:", {
-        id: item.id,
-        purchaseDate: item.purchaseDate,
-        purchaseDateType: typeof item.purchaseDate,
-        purchaseDateString: item.purchaseDate?.toString()
-      });
-      
       setFormData({
         storeName: item.storeName,
         price: item.price.toString(),
         receiptImage: item.receiptImage || "",
       });
       
-      // Get today's date at start of day
+      // Cap purchase date to today if it's in the future
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      console.log("Today (midnight):", today.toISOString());
       
       if (item.purchaseDate) {
         const originalPurchaseDate = new Date(item.purchaseDate);
         originalPurchaseDate.setHours(0, 0, 0, 0);
         
-        console.log("Original purchase date:", originalPurchaseDate.toISOString());
-        console.log("Is future date?", originalPurchaseDate.getTime() > today.getTime());
-        
-        // If purchase date is in the future, cap it to today
         if (originalPurchaseDate.getTime() > today.getTime()) {
-          console.log("Purchase date is in future, capping to today");
           setPurchaseDate(new Date(today));
         } else {
-          console.log("Purchase date is valid, using original date");
           setPurchaseDate(new Date(originalPurchaseDate));
         }
       } else {
-        console.log("No purchase date provided");
         setPurchaseDate(undefined);
       }
       
@@ -226,31 +207,17 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     mode="single"
                     selected={purchaseDate}
                     onSelect={(date) => {
-                      if (date) {
-                        const today = new Date();
-                        today.setHours(23, 59, 59, 999);
-                        // Only allow dates up to today
-                        if (date.getTime() <= today.getTime()) {
-                          setPurchaseDate(date);
-                          setPurchaseCalendarOpen(false);
-                        }
-                      }
+                      setPurchaseDate(date);
+                      setPurchaseCalendarOpen(false);
                     }}
-                    disabled={(date) => {
-                      const today = new Date();
-                      today.setHours(23, 59, 59, 999);
-                      return date.getTime() > today.getTime();
+                    disabled={{ 
+                      from: (() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        return tomorrow;
+                      })()
                     }}
-                    month={purchaseDate && purchaseDate <= new Date() ? purchaseDate : new Date()}
-                    onMonthChange={(month) => {
-                      // Prevent navigating to future months
-                      const today = new Date();
-                      if (month > today) {
-                        return;
-                      }
-                    }}
-                    fromDate={new Date(2020, 0, 1)}
-                    toDate={new Date()}
                     initialFocus
                   />
                 </PopoverContent>
