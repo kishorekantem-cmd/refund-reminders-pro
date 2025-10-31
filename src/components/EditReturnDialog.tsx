@@ -198,8 +198,10 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     onSelect={setReturnByDate}
                     disabled={(date) => {
                       const today = new Date();
+                      const checkDate = new Date(date);
                       today.setHours(0, 0, 0, 0);
-                      return date < today;
+                      checkDate.setHours(0, 0, 0, 0);
+                      return checkDate.getTime() < today.getTime();
                     }}
                     initialFocus
                   />
