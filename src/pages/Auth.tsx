@@ -54,7 +54,7 @@ const Auth = () => {
         throw new Error(errors[0]?.message || "Please check your inputs");
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -63,6 +63,12 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Check if email already exists (user_repeated_signup scenario)
+      // When email confirmation is enabled, Supabase returns success but with empty identities
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        throw new Error("Email already registered. Please sign in instead.");
+      }
 
       toast({
         title: "Success!",
