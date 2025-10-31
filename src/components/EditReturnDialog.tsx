@@ -218,6 +218,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                         return tomorrow;
                       })()
                     }}
+                    defaultMonth={new Date()}
                     initialFocus
                   />
                 </PopoverContent>
@@ -292,6 +293,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                       return tomorrow;
                     })()
                   }}
+                  defaultMonth={new Date()}
                   initialFocus
                 />
               </PopoverContent>
