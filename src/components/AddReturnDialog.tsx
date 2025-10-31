@@ -3,10 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -30,6 +34,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     price: "",
     receiptImage: "",
   });
+  const [returnByDate, setReturnByDate] = useState<Date | undefined>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,15 +87,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         }
       }
 
-      if (formData.returnDate) {
-        const today = new Date().toISOString().split('T')[0];
+      if (returnByDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(returnByDate);
+        selectedDate.setHours(0, 0, 0, 0);
         
-        if (formData.returnDate < today) {
+        if (selectedDate < today) {
           toast.error("Return by date cannot be in the past");
           return;
         }
         
-        if (formData.returnDate < formData.purchaseDate) {
+        if (selectedDate < purchaseDate) {
           toast.error("Return by date must be on or after purchase date");
           return;
         }
@@ -100,7 +108,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     onAdd({
       storeName: formData.storeName.trim(),
       purchaseDate: new Date(formData.purchaseDate),
-      returnDate: formData.returnDate ? new Date(formData.returnDate) : null,
+      returnDate: returnByDate || null,
       returnedDate: formData.returnedDate ? new Date(formData.returnedDate) : null,
       price: parseFloat(formData.price),
       receiptImage: formData.receiptImage || undefined,
@@ -116,6 +124,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       price: "",
       receiptImage: "",
     });
+    setReturnByDate(undefined);
     setOpen(false);
     toast.success("Return added successfully!");
   };
@@ -170,13 +179,34 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="returnDate">Return By</Label>
-            <Input
-              id="returnDate"
-              type="date"
-              value={formData.returnDate}
-              onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-            />
+            <Label>Return By</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !returnByDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {returnByDate ? format(returnByDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={returnByDate}
+                  onSelect={setReturnByDate}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
