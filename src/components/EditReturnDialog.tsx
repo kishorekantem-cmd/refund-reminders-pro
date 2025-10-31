@@ -42,6 +42,12 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
 
   useEffect(() => {
     if (item) {
+      console.log("EditReturnDialog - Original item data:", {
+        purchaseDate: item.purchaseDate,
+        purchaseDateType: typeof item.purchaseDate,
+        purchaseDateString: item.purchaseDate?.toString()
+      });
+      
       setFormData({
         storeName: item.storeName,
         price: item.price.toString(),
@@ -56,8 +62,15 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         const purchaseDate = new Date(item.purchaseDate);
         purchaseDate.setHours(0, 0, 0, 0);
         
+        console.log("EditReturnDialog - Date comparison:", {
+          purchaseDate: purchaseDate.toISOString(),
+          today: today.toISOString(),
+          isFuture: purchaseDate > today
+        });
+        
         // If purchase date is in the future, cap it to today
         if (purchaseDate > today) {
+          console.log("EditReturnDialog - Capping future date to today");
           setPurchaseDate(today);
         } else {
           setPurchaseDate(purchaseDate);
