@@ -226,15 +226,31 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     mode="single"
                     selected={purchaseDate}
                     onSelect={(date) => {
-                      setPurchaseDate(date);
-                      setPurchaseCalendarOpen(false);
+                      if (date) {
+                        const today = new Date();
+                        today.setHours(23, 59, 59, 999);
+                        // Only allow dates up to today
+                        if (date.getTime() <= today.getTime()) {
+                          setPurchaseDate(date);
+                          setPurchaseCalendarOpen(false);
+                        }
+                      }
                     }}
                     disabled={(date) => {
                       const today = new Date();
                       today.setHours(23, 59, 59, 999);
-                      return date > today;
+                      return date.getTime() > today.getTime();
                     }}
-                    defaultMonth={new Date()}
+                    month={purchaseDate && purchaseDate <= new Date() ? purchaseDate : new Date()}
+                    onMonthChange={(month) => {
+                      // Prevent navigating to future months
+                      const today = new Date();
+                      if (month > today) {
+                        return;
+                      }
+                    }}
+                    fromDate={new Date(2020, 0, 1)}
+                    toDate={new Date()}
                     initialFocus
                   />
                 </PopoverContent>
