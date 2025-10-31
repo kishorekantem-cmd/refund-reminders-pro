@@ -193,7 +193,14 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                       setPurchaseDate(date);
                       setPurchaseCalendarOpen(false);
                     }}
-                    disabled={{ after: new Date() }}
+                    disabled={{ 
+                      from: (() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        return tomorrow;
+                      })()
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
@@ -260,7 +267,14 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     setDateReturned(date);
                     setReturnedCalendarOpen(false);
                   }}
-                  disabled={{ after: new Date() }}
+                  disabled={{ 
+                    from: (() => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(0, 0, 0, 0);
+                      return tomorrow;
+                    })()
+                  }}
                   initialFocus
                 />
               </PopoverContent>
