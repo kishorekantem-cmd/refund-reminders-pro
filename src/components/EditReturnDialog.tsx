@@ -94,15 +94,14 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
     }
 
     if (formData.returnDate) {
-      const returnDate = new Date(formData.returnDate);
-      returnDate.setHours(0, 0, 0, 0);
+      const today = new Date().toISOString().split('T')[0];
       
-      if (returnDate < today) {
+      if (formData.returnDate < today) {
         toast.error("Return by date cannot be in the past");
         return;
       }
       
-      if (returnDate < purchaseDate) {
+      if (formData.returnDate < formData.purchaseDate) {
         toast.error("Return by date must be on or after purchase date");
         return;
       }
