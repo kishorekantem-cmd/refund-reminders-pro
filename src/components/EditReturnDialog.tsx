@@ -28,6 +28,8 @@ interface EditReturnDialogProps {
 }
 
 export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditReturnDialogProps) => {
+  console.log("EditReturnDialog component render, item:", item, "open:", open);
+  
   const [formData, setFormData] = useState({
     storeName: "",
     price: "",
@@ -41,8 +43,11 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
   const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
 
   useEffect(() => {
+    console.log("EditReturnDialog useEffect triggered, item:", item);
+    
     if (item) {
-      console.log("EditReturnDialog - Original item data:", {
+      console.log("EditReturnDialog - Setting form data for item:", {
+        id: item.id,
         purchaseDate: item.purchaseDate,
         purchaseDateType: typeof item.purchaseDate,
         purchaseDateString: item.purchaseDate?.toString()
@@ -54,28 +59,28 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         receiptImage: item.receiptImage || "",
       });
       
-      // Validate purchase date - cap to today if it's in the future
+      // Get today's date at start of day
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      console.log("Today (midnight):", today.toISOString());
       
       if (item.purchaseDate) {
-        const purchaseDate = new Date(item.purchaseDate);
-        purchaseDate.setHours(0, 0, 0, 0);
+        const originalPurchaseDate = new Date(item.purchaseDate);
+        originalPurchaseDate.setHours(0, 0, 0, 0);
         
-        console.log("EditReturnDialog - Date comparison:", {
-          purchaseDate: purchaseDate.toISOString(),
-          today: today.toISOString(),
-          isFuture: purchaseDate > today
-        });
+        console.log("Original purchase date:", originalPurchaseDate.toISOString());
+        console.log("Is future date?", originalPurchaseDate.getTime() > today.getTime());
         
         // If purchase date is in the future, cap it to today
-        if (purchaseDate > today) {
-          console.log("EditReturnDialog - Capping future date to today");
-          setPurchaseDate(today);
+        if (originalPurchaseDate.getTime() > today.getTime()) {
+          console.log("Purchase date is in future, capping to today");
+          setPurchaseDate(new Date(today));
         } else {
-          setPurchaseDate(purchaseDate);
+          console.log("Purchase date is valid, using original date");
+          setPurchaseDate(new Date(originalPurchaseDate));
         }
       } else {
+        console.log("No purchase date provided");
         setPurchaseDate(undefined);
       }
       
