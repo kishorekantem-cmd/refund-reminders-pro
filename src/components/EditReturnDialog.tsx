@@ -47,7 +47,25 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
         price: item.price.toString(),
         receiptImage: item.receiptImage || "",
       });
-      setPurchaseDate(item.purchaseDate ? new Date(item.purchaseDate) : undefined);
+      
+      // Validate purchase date - cap to today if it's in the future
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (item.purchaseDate) {
+        const purchaseDate = new Date(item.purchaseDate);
+        purchaseDate.setHours(0, 0, 0, 0);
+        
+        // If purchase date is in the future, cap it to today
+        if (purchaseDate > today) {
+          setPurchaseDate(today);
+        } else {
+          setPurchaseDate(purchaseDate);
+        }
+      } else {
+        setPurchaseDate(undefined);
+      }
+      
       setReturnByDate(item.returnDate ? new Date(item.returnDate) : undefined);
       setDateReturned(item.returnedDate ? new Date(item.returnedDate) : undefined);
     }
@@ -193,14 +211,12 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                       setPurchaseDate(date);
                       setPurchaseCalendarOpen(false);
                     }}
-                    disabled={{ 
-                      from: (() => {
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        tomorrow.setHours(0, 0, 0, 0);
-                        return tomorrow;
-                      })()
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(23, 59, 59, 999);
+                      return date > today;
                     }}
+                    defaultMonth={new Date()}
                     initialFocus
                   />
                 </PopoverContent>
