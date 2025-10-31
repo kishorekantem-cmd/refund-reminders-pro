@@ -172,6 +172,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               type="date"
               value={formData.returnDate}
               onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+              min={new Date().toISOString().split('T')[0]}
             />
           </div>
         </div>
