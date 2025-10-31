@@ -39,6 +39,15 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
   const [returnByDate, setReturnByDate] = useState<Date | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  // Get today's date in local timezone for validation
+  const getTodayLocalDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     if (item) {
       setFormData({
@@ -172,7 +181,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                 type="date"
                 value={formData.purchaseDate}
                 onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                max={new Date().toISOString().split('T')[0]}
+                max={getTodayLocalDateString()}
                 required
               />
             </div>
@@ -221,7 +230,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
               type="date"
               value={formData.returnedDate}
               onChange={(e) => setFormData({ ...formData, returnedDate: e.target.value })}
-              max={new Date().toISOString().split('T')[0]}
+              max={getTodayLocalDateString()}
             />
           </div>
 
