@@ -188,7 +188,7 @@ export const EditReturnDialog = ({ item, open, onOpenChange, onSave }: EditRetur
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {returnByDate ? format(returnByDate, "PPP") : <span>Pick a date</span>}
+                    {returnByDate ? format(returnByDate, "MM/dd/yyyy") : <span>mm/dd/yyyy</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
