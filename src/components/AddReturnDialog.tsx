@@ -86,6 +86,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         const returnDate = new Date(formData.returnDate);
         returnDate.setHours(0, 0, 0, 0);
         
+        if (returnDate < today) {
+          toast.error("Return by date cannot be in the past");
+          return;
+        }
+        
         if (returnDate < purchaseDate) {
           toast.error("Return by date must be on or after purchase date");
           return;
@@ -172,7 +177,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               type="date"
               value={formData.returnDate}
               onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-              min={new Date().toISOString().split('T')[0]}
             />
           </div>
         </div>
