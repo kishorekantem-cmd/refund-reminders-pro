@@ -191,7 +191,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     setPurchaseDate(date);
                     setPurchaseCalendarOpen(false);
                   }}
-                  disabled={(date) => date > new Date()}
+                  disabled={(date) => {
+                    const today = new Date();
+                    const checkDate = new Date(date);
+                    today.setHours(0, 0, 0, 0);
+                    checkDate.setHours(0, 0, 0, 0);
+                    return checkDate.getTime() > today.getTime();
+                  }}
                   initialFocus
                 />
               </PopoverContent>
@@ -258,7 +264,13 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                   setDateReturned(date);
                   setReturnedCalendarOpen(false);
                 }}
-                disabled={(date) => date > new Date()}
+                disabled={(date) => {
+                  const today = new Date();
+                  const checkDate = new Date(date);
+                  today.setHours(0, 0, 0, 0);
+                  checkDate.setHours(0, 0, 0, 0);
+                  return checkDate.getTime() > today.getTime();
+                }}
                 initialFocus
               />
             </PopoverContent>
