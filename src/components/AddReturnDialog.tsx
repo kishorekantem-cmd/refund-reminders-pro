@@ -226,6 +226,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     checkDate.setHours(0, 0, 0, 0);
                     return checkDate.getTime() > today.getTime();
                   }}
+                  showOutsideDays={false}
                   initialFocus
                 />
               </PopoverContent>
