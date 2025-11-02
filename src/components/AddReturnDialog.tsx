@@ -219,13 +219,12 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     setPurchaseDate(date);
                     setPurchaseCalendarOpen(false);
                   }}
-                  disabled={{ 
-                    from: (() => {
-                      const tomorrow = new Date();
-                      tomorrow.setDate(tomorrow.getDate() + 1);
-                      tomorrow.setHours(0, 0, 0, 0);
-                      return tomorrow;
-                    })()
+                  disabled={(date) => {
+                    const today = new Date();
+                    const checkDate = new Date(date);
+                    today.setHours(0, 0, 0, 0);
+                    checkDate.setHours(0, 0, 0, 0);
+                    return checkDate.getTime() < today.getTime() || checkDate.getTime() > today.getTime();
                   }}
                   initialFocus
                 />
