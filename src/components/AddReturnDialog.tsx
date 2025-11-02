@@ -224,7 +224,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     const checkDate = new Date(date);
                     today.setHours(0, 0, 0, 0);
                     checkDate.setHours(0, 0, 0, 0);
-                    return checkDate.getTime() < today.getTime() || checkDate.getTime() > today.getTime();
+                    return checkDate.getTime() > today.getTime();
                   }}
                   initialFocus
                 />
