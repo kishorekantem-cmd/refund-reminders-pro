@@ -6,17 +6,7 @@ import { EditReturnDialog } from "@/components/EditReturnDialog";
 import { ReturnDetailDialog } from "@/components/ReturnDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Package, Receipt, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Package, Receipt, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +14,7 @@ import type { ReturnItem as DBReturnItem } from "@/types/database";
 import SupportFooter from "@/components/SupportFooter";
 
 const Index = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [returns, setReturns] = useState<ReturnItem[]>([]);
   const [selectedReturn, setSelectedReturn] = useState<ReturnItem | null>(null);
@@ -32,7 +22,6 @@ const Index = () => {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -276,16 +265,6 @@ const Index = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    console.log('handleSignOut called');
-    try {
-      console.log('Calling signOut function...');
-      await signOut();
-      console.log('signOut completed, user should be null now');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   const filteredReturns = returns.filter((item) => {
     if (filter === "all") return true;
@@ -340,18 +319,6 @@ const Index = () => {
                 aria-label="Settings"
               >
                 <SettingsIcon className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log('=== LOGOUT BUTTON CLICKED ===');
-                  setShowLogoutDialog(true);
-                }}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
-                aria-label="Logout"
-              >
-                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -440,29 +407,6 @@ const Index = () => {
         onOpenChange={(open) => !open && setEditingReturn(null)}
         onSave={handleEdit}
       />
-
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to logout? You'll need to sign in again to access your returns.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
-                setShowLogoutDialog(false);
-                handleSignOut();
-              }}
-            >
-              Logout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
