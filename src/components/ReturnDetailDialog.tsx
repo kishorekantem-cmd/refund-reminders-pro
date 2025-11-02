@@ -31,6 +31,7 @@ export const ReturnDetailDialog = ({
   onDelete,
 }: ReturnDetailDialogProps) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedReturnDate, setSelectedReturnDate] = useState<Date | undefined>(undefined);
   
   if (!item) return null;
@@ -201,7 +202,7 @@ export const ReturnDetailDialog = ({
               Edit Return
             </Button>
             <Button
-              onClick={() => onDelete(item.id)}
+              onClick={() => setShowDeleteDialog(true)}
               variant="destructive"
               className="w-full"
             >
@@ -273,6 +274,30 @@ export const ReturnDetailDialog = ({
               disabled={!item.returnedDate && !selectedReturnDate}
             >
               {!item.returnedDate ? "Confirm Returned" : "Confirm Refund Received"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Return</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this return? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                onDelete(item.id);
+                setShowDeleteDialog(false);
+                onOpenChange(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
