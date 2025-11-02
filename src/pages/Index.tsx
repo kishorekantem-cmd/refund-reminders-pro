@@ -16,11 +16,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, Receipt, LogOut } from "lucide-react";
+import { Package, Receipt, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReturnItem as DBReturnItem } from "@/types/database";
+import SupportFooter from "@/components/SupportFooter";
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -334,6 +335,14 @@ const Index = () => {
               <AddReturnDialog onAdd={handleAddReturn} />
               <button
                 type="button"
+                onClick={() => navigate("/settings")}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
+                aria-label="Settings"
+              >
+                <SettingsIcon className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log('=== LOGOUT BUTTON CLICKED ===');
@@ -407,6 +416,9 @@ const Index = () => {
             ))
           )}
         </div>
+
+        {/* Support Footer */}
+        <SupportFooter />
       </div>
 
       {/* Detail Dialog */}
