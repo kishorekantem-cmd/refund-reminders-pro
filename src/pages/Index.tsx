@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReturnItem as DBReturnItem } from "@/types/database";
-import SupportFooter from "@/components/SupportFooter";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -383,9 +382,6 @@ const Index = () => {
             ))
           )}
         </div>
-
-        {/* Support Footer */}
-        <SupportFooter />
       </div>
 
       {/* Detail Dialog */}
