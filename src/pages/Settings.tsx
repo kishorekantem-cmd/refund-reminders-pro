@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -76,11 +77,14 @@ const Settings = () => {
           <h1 className="text-3xl font-bold">Settings</h1>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>About & Support</CardTitle>
-            <CardDescription>ReFundly — Smart Refund Tracker</CardDescription>
-          </CardHeader>
+        <div className="space-y-4">
+          <NotificationSettings />
+
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>About & Support</CardTitle>
+              <CardDescription>ReFundly — Smart Refund Tracker</CardDescription>
+            </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center space-y-4 py-4">
               <Button
@@ -109,6 +113,7 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       {/* Logout Confirmation Dialog */}
