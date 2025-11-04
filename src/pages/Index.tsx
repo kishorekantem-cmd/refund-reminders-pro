@@ -6,7 +6,7 @@ import { EditReturnDialog } from "@/components/EditReturnDialog";
 import { ReturnDetailDialog } from "@/components/ReturnDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Receipt, Settings as SettingsIcon } from "lucide-react";
+import { Package, Receipt, Settings as SettingsIcon, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,12 +21,49 @@ const Index = () => {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [fetchLoading, setFetchLoading] = useState(true);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullStartY, setPullStartY] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchReturns();
     }
   }, [user]);
+
+  // Pull to refresh handlers
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.scrollY === 0) {
+        setPullStartY(e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (pullStartY !== null && window.scrollY === 0) {
+        const touchY = e.touches[0].clientY;
+        const pullDistance = touchY - pullStartY;
+        
+        if (pullDistance > 80 && !isRefreshing) {
+          handleRefresh();
+          setPullStartY(null);
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setPullStartY(null);
+    };
+
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [pullStartY, isRefreshing]);
 
 
   const fetchReturns = async () => {
@@ -119,41 +156,65 @@ const Index = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast.info("Refreshing...");
+    await fetchReturns();
+    setIsRefreshing(false);
+    toast.success("Refreshed!");
+  };
+
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('returns')
-      .insert({
-        user_id: user.id,
-        store_name: newReturn.storeName,
-        item_name: newReturn.storeName,
-        amount: newReturn.price,
-        purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
-        return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
-        returned_date: newReturn.returnedDate ? newReturn.returnedDate.toISOString().split('T')[0] : null,
-        receipt_image: newReturn.receiptImage,
-        refund_received: false,
-      })
-      .select()
-      .single();
+    try {
+      // Validate image size (max 2MB for better mobile compatibility)
+      if (newReturn.receiptImage && newReturn.receiptImage.length > 2 * 1024 * 1024) {
+        toast.error('Image is too large. Please use a smaller image (max 2MB)');
+        return;
+      }
 
-    if (error) {
-      toast.error('Failed to add return');
-    } else if (data) {
-      const newItem: ReturnItem = {
-        id: data.id,
-        storeName: data.store_name,
-        purchaseDate: data.purchase_date ? new Date(data.purchase_date) : null,
-        returnDate: data.return_date ? new Date(data.return_date) : null,
-        returnedDate: data.returned_date ? new Date(data.returned_date) : null,
-        price: Number(data.amount),
-        receiptImage: data.receipt_image,
-        status: "pending",
-        refundReceived: false,
-      };
-      setReturns([newItem, ...returns]);
-      toast.success('Return added successfully!');
+      const { data, error } = await supabase
+        .from('returns')
+        .insert({
+          user_id: user.id,
+          store_name: newReturn.storeName,
+          item_name: newReturn.storeName,
+          amount: newReturn.price,
+          purchase_date: newReturn.purchaseDate.toISOString().split('T')[0],
+          return_date: newReturn.returnDate ? newReturn.returnDate.toISOString().split('T')[0] : null,
+          returned_date: newReturn.returnedDate ? newReturn.returnedDate.toISOString().split('T')[0] : null,
+          receipt_image: newReturn.receiptImage,
+          refund_received: false,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding return:', error);
+        toast.error('Failed to add return: ' + error.message);
+        return;
+      }
+
+      if (data) {
+        const newItem: ReturnItem = {
+          id: data.id,
+          storeName: data.store_name,
+          purchaseDate: data.purchase_date ? new Date(data.purchase_date) : null,
+          returnDate: data.return_date ? new Date(data.return_date) : null,
+          returnedDate: data.returned_date ? new Date(data.returned_date) : null,
+          price: Number(data.amount),
+          receiptImage: data.receipt_image,
+          hasReceipt: !!data.receipt_image,
+          status: "pending",
+          refundReceived: false,
+        };
+        setReturns([newItem, ...returns]);
+        toast.success('Return added successfully!');
+      }
+    } catch (err) {
+      console.error('Exception adding return:', err);
+      toast.error('Failed to add return. Please try again.');
     }
   };
 
@@ -311,6 +372,15 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <AddReturnDialog onAdd={handleAddReturn} />
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
+                aria-label="Refresh"
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
               <button
                 type="button"
                 onClick={() => navigate("/settings")}
