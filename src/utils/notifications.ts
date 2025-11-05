@@ -1,5 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export const isNativeApp = (): boolean => {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+         (window.navigator as any).standalone === true ||
+         document.referrer.includes('android-app://');
+};
+
 export const requestNotificationPermission = async () => {
   if (!("Notification" in window)) {
     console.log("This browser does not support notifications");

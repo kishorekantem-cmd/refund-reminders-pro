@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { requestNotificationPermission, checkAndScheduleNotifications } from "@/utils/notifications";
+import { requestNotificationPermission, checkAndScheduleNotifications, isNativeApp } from "@/utils/notifications";
 
 export const NotificationSettings = () => {
   const [notificationStatus, setNotificationStatus] = useState<"granted" | "denied" | "default">("default");
+  const isNative = isNativeApp();
 
   useEffect(() => {
     if ("Notification" in window) {
@@ -22,7 +23,11 @@ export const NotificationSettings = () => {
       await checkAndScheduleNotifications();
     } else {
       setNotificationStatus("denied");
-      toast.error("Notification permission denied. Please enable in browser settings.");
+      if (isNative) {
+        toast.error("Please enable notifications in your device settings for ReFundly app.");
+      } else {
+        toast.error("Notification permission denied. Please enable in browser settings.");
+      }
     }
   };
 
@@ -72,9 +77,22 @@ export const NotificationSettings = () => {
         </div>
 
         {notificationStatus === "denied" && (
-          <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            <BellOff className="w-4 h-4 inline mr-2" />
-            Notifications are blocked. Please enable them in your browser settings.
+          <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
+            <BellOff className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              {isNative ? (
+                <>Go to Settings → Apps → ReFundly → Notifications and enable them.</>
+              ) : (
+                <>Notifications are blocked. Please enable them in your browser settings.</>
+              )}
+            </span>
+          </div>
+        )}
+
+        {isNative && notificationStatus === "granted" && (
+          <div className="p-3 rounded-lg bg-success/10 text-success text-sm flex items-start gap-2">
+            <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>App notifications are enabled. You'll receive alerts even when the app is closed.</span>
           </div>
         )}
 

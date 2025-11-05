@@ -167,11 +167,16 @@ const Index = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    toast.info("Refreshing...");
-    await fetchReturns();
-    await checkAndScheduleNotifications();
-    setIsRefreshing(false);
-    toast.success("Refreshed!");
+    try {
+      await fetchReturns();
+      await checkAndScheduleNotifications();
+      toast.success("Refreshed!");
+    } catch (error) {
+      console.error('Refresh error:', error);
+      toast.error("Failed to refresh");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
