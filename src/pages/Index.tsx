@@ -385,19 +385,8 @@ const Index = () => {
                 <p className="text-sm text-primary-foreground/80 hidden sm:block">Track your returns effortlessly</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <AddReturnDialog onAdd={handleAddReturn} />
-              <Button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                variant="ghost"
-                size="icon"
-                className="hover:bg-white/10 text-primary-foreground touch-manipulation h-9 w-9"
-                aria-label="Refresh"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
               <Button
                 type="button"
                 onClick={() => navigate("/settings")}
