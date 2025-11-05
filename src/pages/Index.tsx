@@ -386,6 +386,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <AddReturnDialog onAdd={handleAddReturn} />
               <Button
                 type="button"
                 onClick={handleRefresh}
