@@ -386,24 +386,27 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <AddReturnDialog onAdd={handleAddReturn} />
-              <button
+              <Button
                 type="button"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
+                variant="ghost"
+                size="icon"
+                className="hover:bg-white/10 text-primary-foreground touch-manipulation"
                 aria-label="Refresh"
               >
                 <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => navigate("/settings")}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
+                variant="ghost"
+                size="icon"
+                className="hover:bg-white/10 text-primary-foreground touch-manipulation"
                 aria-label="Settings"
               >
                 <SettingsIcon className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
