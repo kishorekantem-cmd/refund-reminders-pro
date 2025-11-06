@@ -174,60 +174,69 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       reader.onloadend = async () => {
         const img = new Image();
         img.onload = async () => {
-          // Create canvas to resize image
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Calculate new dimensions (max 1200px width/height)
-          let width = img.width;
-          let height = img.height;
-          const maxDimension = 1200;
-          
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = (height / width) * maxDimension;
-              width = maxDimension;
-            } else {
-              width = (width / height) * maxDimension;
-              height = maxDimension;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          // Draw and compress image
-          ctx?.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
-          toast.success('Receipt image uploaded');
-
-          // Extract receipt information using OCR
-          setIsProcessingOCR(true);
-          toast.info('Extracting receipt information...');
-
           try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const response = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                },
-                body: JSON.stringify({ imageData: compressedDataUrl }),
+            // Create canvas to resize image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate new dimensions (max 800px for mobile compatibility)
+            let width = img.width;
+            let height = img.height;
+            const maxDimension = 800;
+            
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = (height / width) * maxDimension;
+                width = maxDimension;
+              } else {
+                width = (width / height) * maxDimension;
+                height = maxDimension;
               }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || 'Failed to extract receipt info');
             }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress image
+            ctx?.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            
+            setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
+            toast.success('Receipt image uploaded');
 
-            const extractedData = await response.json();
-            console.log('Extracted data:', extractedData);
+            // Extract receipt information using OCR (with error handling)
+            setIsProcessingOCR(true);
+            toast.info('Extracting receipt information...');
+
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              
+              // Create abort controller for timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+              
+              const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                  },
+                  body: JSON.stringify({ imageData: compressedDataUrl }),
+                  signal: controller.signal,
+                }
+              );
+
+              clearTimeout(timeoutId);
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || 'Failed to extract receipt info');
+              }
+
+              const extractedData = await response.json();
+              console.log('Extracted data:', extractedData);
 
             // Auto-fill form fields
             if (extractedData.storeName) {
@@ -262,13 +271,27 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             toast.success('Receipt info extracted! Please review and edit if needed.');
           } catch (error) {
             console.error('OCR Error:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to extract receipt info. Please fill manually.');
+            // Don't show error for timeouts or network issues, just let user fill manually
+            if (error instanceof Error) {
+              if (error.name === 'AbortError') {
+                toast.warning('OCR taking too long. Please fill the form manually.');
+              } else {
+                toast.warning('Could not extract receipt info. Please fill manually.');
+              }
+            } else {
+              toast.warning('Could not extract receipt info. Please fill manually.');
+            }
           } finally {
             setIsProcessingOCR(false);
           }
+          } catch (error) {
+            console.error('Image processing error:', error);
+            toast.error('Failed to process image. Please try another image.');
+            setFormData(prev => ({ ...prev, receiptImage: '' }));
+          }
         };
         img.onerror = () => {
-          toast.error('Failed to process image');
+          toast.error('Failed to load image');
           e.target.value = '';
         };
         img.src = reader.result as string;
