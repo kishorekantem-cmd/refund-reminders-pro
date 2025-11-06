@@ -38,6 +38,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [purchaseCalendarOpen, setPurchaseCalendarOpen] = useState(false);
   const [returnByCalendarOpen, setReturnByCalendarOpen] = useState(false);
   const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +160,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     toast.success("Return added successfully!");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Check file size (max 5MB)
@@ -170,9 +171,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       }
 
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const img = new Image();
-        img.onload = () => {
+        img.onload = async () => {
           // Create canvas to resize image
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
@@ -201,6 +202,70 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           
           setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
           toast.success('Receipt image uploaded');
+
+          // Extract receipt information using OCR
+          setIsProcessingOCR(true);
+          toast.info('Extracting receipt information...');
+
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({ imageData: compressedDataUrl }),
+              }
+            );
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to extract receipt info');
+            }
+
+            const extractedData = await response.json();
+            console.log('Extracted data:', extractedData);
+
+            // Auto-fill form fields
+            if (extractedData.storeName) {
+              setFormData(prev => ({ ...prev, storeName: extractedData.storeName }));
+            }
+            if (extractedData.amount) {
+              setFormData(prev => ({ ...prev, price: extractedData.amount.toString() }));
+            }
+            if (extractedData.purchaseDate) {
+              try {
+                const [month, day, year] = extractedData.purchaseDate.split('/');
+                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                if (!isNaN(date.getTime())) {
+                  setPurchaseDate(date);
+                }
+              } catch (err) {
+                console.error('Error parsing purchase date:', err);
+              }
+            }
+            if (extractedData.returnByDate) {
+              try {
+                const [month, day, year] = extractedData.returnByDate.split('/');
+                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                if (!isNaN(date.getTime())) {
+                  setReturnByDate(date);
+                }
+              } catch (err) {
+                console.error('Error parsing return by date:', err);
+              }
+            }
+
+            toast.success('Receipt info extracted! Please review and edit if needed.');
+          } catch (error) {
+            console.error('OCR Error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to extract receipt info. Please fill manually.');
+          } finally {
+            setIsProcessingOCR(false);
+          }
         };
         img.onerror = () => {
           toast.error('Failed to process image');
@@ -377,19 +442,24 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 capture="environment"
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={isProcessingOCR}
               />
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => document.getElementById("receipt")?.click()}
                 className="w-full"
+                disabled={isProcessingOCR}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {formData.receiptImage ? "Change Receipt" : "Upload Receipt"}
+                {isProcessingOCR ? "Processing..." : formData.receiptImage ? "Change Receipt" : "Upload Receipt"}
               </Button>
             </div>
             {formData.receiptImage && (
-              <p className="text-xs text-success">✓ Receipt uploaded</p>
+              <p className="text-xs text-success">✓ Receipt uploaded - Info auto-extracted</p>
+            )}
+            {isProcessingOCR && (
+              <p className="text-xs text-muted-foreground">🔍 Extracting receipt information...</p>
             )}
           </div>
 
