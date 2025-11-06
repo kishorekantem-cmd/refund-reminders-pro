@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReturnItem as DBReturnItem } from "@/types/database";
-import { requestNotificationPermission, checkAndScheduleNotifications } from "@/utils/notifications";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -28,16 +27,8 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       fetchReturns();
-      initializeNotifications();
     }
   }, [user]);
-
-  const initializeNotifications = async () => {
-    const hasPermission = await requestNotificationPermission();
-    if (hasPermission) {
-      await checkAndScheduleNotifications();
-    }
-  };
 
   // Pull to refresh handlers
   useEffect(() => {
@@ -169,7 +160,6 @@ const Index = () => {
     setIsRefreshing(true);
     toast.info("Refreshing...");
     await fetchReturns();
-    await checkAndScheduleNotifications();
     setIsRefreshing(false);
     toast.success("Refreshed!");
   };
