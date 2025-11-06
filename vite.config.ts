@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['icon-512x512.png', 'icon-192x192.png'],
       manifest: {
-        name: 'ReturnTrackr - Refund Reminder App',
-        short_name: 'ReturnTrackr',
+        name: 'ReFundly - Refund Reminder App',
+        short_name: 'ReFundly',
         description: 'Track your shopping returns and never miss a refund',
         theme_color: '#0EA5E9',
         background_color: '#0f172a',
@@ -27,12 +27,14 @@ export default defineConfig(({ mode }) => ({
           {
             src: 'icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       },
@@ -47,10 +49,17 @@ export default defineConfig(({ mode }) => ({
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
               }
             }
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ].filter(Boolean),

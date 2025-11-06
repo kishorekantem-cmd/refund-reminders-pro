@@ -165,6 +165,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image is too large. Please use an image smaller than 5MB');
+        e.target.value = '';
         return;
       }
 
@@ -198,13 +199,18 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           ctx?.drawImage(img, 0, 0, width, height);
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
           
-          setFormData({ ...formData, receiptImage: compressedDataUrl });
-          toast.success('Receipt image uploaded and compressed');
+          setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
+          toast.success('Receipt image uploaded');
+        };
+        img.onerror = () => {
+          toast.error('Failed to process image');
+          e.target.value = '';
         };
         img.src = reader.result as string;
       };
       reader.onerror = () => {
         toast.error('Failed to read image file');
+        e.target.value = '';
       };
       reader.readAsDataURL(file);
     }
