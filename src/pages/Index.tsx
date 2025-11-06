@@ -167,16 +167,11 @@ const Index = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    try {
-      await fetchReturns();
-      await checkAndScheduleNotifications();
-      toast.success("Refreshed!");
-    } catch (error) {
-      console.error('Refresh error:', error);
-      toast.error("Failed to refresh");
-    } finally {
-      setIsRefreshing(false);
-    }
+    toast.info("Refreshing...");
+    await fetchReturns();
+    await checkAndScheduleNotifications();
+    setIsRefreshing(false);
+    toast.success("Refreshed!");
   };
 
   const handleAddReturn = async (newReturn: Omit<ReturnItem, "id">) => {
@@ -375,28 +370,35 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-gradient-primary text-primary-foreground shadow-lg">
         <div className="container max-w-2xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm">
                 <Receipt className="w-6 h-6" />
               </div>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold truncate">ReFundly</h1>
-                <p className="text-sm text-primary-foreground/80 hidden sm:block">Track your returns effortlessly</p>
+              <div>
+                <h1 className="text-2xl font-bold">ReFundly</h1>
+                <p className="text-sm text-primary-foreground/80">Track your returns effortlessly</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2">
               <AddReturnDialog onAdd={handleAddReturn} />
-              <Button
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
+                aria-label="Refresh"
+              >
+                <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <button
                 type="button"
                 onClick={() => navigate("/settings")}
-                variant="ghost"
-                size="icon"
-                className="hover:bg-white/10 text-primary-foreground touch-manipulation h-9 w-9"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-white/10 h-10 w-10 text-primary-foreground touch-manipulation"
                 aria-label="Settings"
               >
-                <SettingsIcon className="w-4 h-4" />
-              </Button>
+                <SettingsIcon className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

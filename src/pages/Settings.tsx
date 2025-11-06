@@ -64,15 +64,15 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="max-w-2xl mx-auto pb-20">
-        <div className="mb-6 flex items-center gap-3">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
-            size="icon"
-            className="flex-shrink-0"
+            className="mb-4"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
           </Button>
           <h1 className="text-3xl font-bold">Settings</h1>
         </div>
