@@ -99,11 +99,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       const checkReturnBy = new Date(returnByDate);
       checkReturnBy.setHours(0, 0, 0, 0);
       
-      if (checkReturnBy < today) {
-        toast.error("Return by date cannot be in the past");
-        return;
-      }
-      
       if (checkReturnBy < checkPurchase) {
         toast.error("Return by date must be on or after purchase date");
         return;
@@ -405,11 +400,12 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     setReturnByCalendarOpen(false);
                   }}
                   disabled={(date) => {
-                    const today = new Date();
+                    if (!purchaseDate) return false;
                     const checkDate = new Date(date);
-                    today.setHours(0, 0, 0, 0);
+                    const checkPurchase = new Date(purchaseDate);
                     checkDate.setHours(0, 0, 0, 0);
-                    return checkDate.getTime() < today.getTime();
+                    checkPurchase.setHours(0, 0, 0, 0);
+                    return checkDate.getTime() < checkPurchase.getTime();
                   }}
                   initialFocus
                 />
