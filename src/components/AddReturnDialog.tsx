@@ -269,6 +269,23 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             }
 
             toast.success('Receipt info extracted! Please review and edit if needed.');
+            
+            // Auto-submit after OCR if all required fields are filled (after 2 second delay)
+            setTimeout(() => {
+              // Check if all required fields are filled
+              const hasStoreName = formData.storeName.trim().length > 0 || extractedData.storeName;
+              const hasPrice = formData.price || extractedData.amount;
+              const hasPurchaseDate = purchaseDate || extractedData.purchaseDate;
+              
+              if (hasStoreName && hasPrice && hasPurchaseDate) {
+                toast.info('Auto-submitting return...');
+                // Trigger form submit programmatically
+                const form = document.getElementById('add-return-form') as HTMLFormElement;
+                if (form) {
+                  form.requestSubmit();
+                }
+              }
+            }, 2000);
           } catch (error) {
             console.error('OCR Error:', error);
             // Don't show error for timeouts or network issues, just let user fill manually
@@ -316,7 +333,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         <DialogHeader>
           <DialogTitle>Add New Return</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="add-return-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="storeName">Store Name *</Label>
             <Input
