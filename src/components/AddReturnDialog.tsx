@@ -152,7 +152,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     setReturnByDate(undefined);
     setDateReturned(undefined);
     setOpen(false);
-    toast.success("Return added successfully!");
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,13 +266,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             toast.dismiss(uploadToastId);
             toast.dismiss(extractingToastId);
             
-            // Show review message with OK button
-            toast.success("We've extracted the receipt details automatically. Please review and edit if any information looks incorrect before saving.", {
-              duration: Infinity,
-              action: {
-                label: 'OK',
-                onClick: () => {}
-              }
+            // Show review message with OK button that dismisses itself
+            toast.success("Receipt scanned! Please review the auto-filled details below and edit if needed before clicking 'Add Return'.", {
+              duration: 8000,
             });
           } catch (error) {
             console.error('OCR Error:', error);

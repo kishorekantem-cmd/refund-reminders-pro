@@ -170,7 +170,7 @@ const Index = () => {
     try {
       await fetchReturns();
       await checkAndScheduleNotifications();
-      toast.success("Refreshed!");
+      toast.success("Refreshed!", { duration: 2000 });
     } catch (error) {
       console.error('Refresh error:', error);
       toast.error("Failed to refresh");
@@ -225,7 +225,7 @@ const Index = () => {
           refundReceived: false,
         };
         setReturns([newItem, ...returns]);
-        toast.success('Return added successfully!');
+        toast.success('Return added successfully!', { duration: 3000 });
       }
     } catch (err) {
       console.error('Exception adding return:', err);
