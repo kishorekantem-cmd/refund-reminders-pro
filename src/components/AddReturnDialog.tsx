@@ -202,11 +202,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
             
             setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
-            toast.success('Receipt image uploaded');
+            const uploadToastId = toast.success('Receipt image uploaded');
 
             // Extract receipt information using OCR (with error handling)
             setIsProcessingOCR(true);
-            toast.info('Extracting receipt information...');
+            const extractingToastId = toast.info('Extracting receipt information...');
 
             try {
               const { data: { session } } = await supabase.auth.getSession();
@@ -268,9 +268,24 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               }
             }
 
-            toast.success("We've extracted the receipt details automatically. Please review and edit if any information looks incorrect before saving.");
+            // Dismiss previous toasts
+            toast.dismiss(uploadToastId);
+            toast.dismiss(extractingToastId);
+            
+            // Show review message with OK button
+            toast.success("We've extracted the receipt details automatically. Please review and edit if any information looks incorrect before saving.", {
+              duration: Infinity,
+              action: {
+                label: 'OK',
+                onClick: () => {}
+              }
+            });
           } catch (error) {
             console.error('OCR Error:', error);
+            // Dismiss previous toasts
+            toast.dismiss(uploadToastId);
+            toast.dismiss(extractingToastId);
+            
             // Don't show error for timeouts or network issues, just let user fill manually
             if (error instanceof Error) {
               if (error.name === 'AbortError') {
