@@ -38,13 +38,21 @@ serve(async (req) => {
 {
   "storeName": "name of the store",
   "purchaseDate": "date in MM/DD/YYYY format",
-  "returnByDate": "return deadline date in MM/DD/YYYY format if mentioned (look for phrases like 'Return by', 'Return within X days', 'Return policy', etc.)",
+  "returnByDate": "return deadline date in MM/DD/YYYY format if mentioned",
   "amount": "total amount as a number"
 }
 
-Instructions:
-- For returnByDate: Look for explicit return deadlines, return policy dates, or calculate from "return within X days" text
-- If returnByDate is not found, set it to null
+CRITICAL INSTRUCTIONS FOR returnByDate:
+1. First, look for explicit return deadline dates on the receipt
+2. Look for phrases like "Return by [date]", "Exchange by [date]", "Must return by [date]"
+3. Look for return policy text stating "Return within X days" - if found, calculate the date by adding X days to the purchase date
+4. Check store policy information at the bottom of receipt - many stores print their return policy there
+5. Look for fine print mentioning return windows (e.g., "30 day return policy", "Returns accepted within 60 days")
+6. Common store policies: Target (90 days), Walmart (90 days), Amazon (30 days), Best Buy (15-30 days)
+7. If you see the store name and recognize it, apply their standard return policy if no specific date is mentioned
+8. If absolutely no return information is found anywhere, set to null
+
+For other fields:
 - Extract only the information present in the receipt
 - Return ONLY the JSON object, no additional text
 - Use null for any field that cannot be determined from the receipt`

@@ -196,11 +196,9 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
             
             setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
-            const uploadToastId = toast.success('Receipt image uploaded');
-
             // Extract receipt information using OCR (with error handling)
             setIsProcessingOCR(true);
-            const extractingToastId = toast.info('Extracting receipt information...');
+            toast.info('📸 Receipt uploaded! Extracting information...', { duration: 2000 });
 
             try {
               const { data: { session } } = await supabase.auth.getSession();
@@ -233,11 +231,15 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               console.log('Extracted data:', extractedData);
 
             // Auto-fill form fields
+            let fieldsUpdated = [];
+            
             if (extractedData.storeName) {
               setFormData(prev => ({ ...prev, storeName: extractedData.storeName }));
+              fieldsUpdated.push('store');
             }
             if (extractedData.amount) {
               setFormData(prev => ({ ...prev, price: extractedData.amount.toString() }));
+              fieldsUpdated.push('price');
             }
             if (extractedData.purchaseDate) {
               try {
@@ -245,6 +247,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                 if (!isNaN(date.getTime())) {
                   setPurchaseDate(date);
+                  fieldsUpdated.push('purchase date');
                 }
               } catch (err) {
                 console.error('Error parsing purchase date:', err);
@@ -256,35 +259,30 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                 if (!isNaN(date.getTime())) {
                   setReturnByDate(date);
+                  fieldsUpdated.push('return by date');
                 }
               } catch (err) {
                 console.error('Error parsing return by date:', err);
               }
             }
-
-            // Dismiss previous toasts
-            toast.dismiss(uploadToastId);
-            toast.dismiss(extractingToastId);
             
-            // Show review message with OK button that dismisses itself
-            toast.success("Receipt scanned! Please review the auto-filled details below and edit if needed before clicking 'Add Return'.", {
-              duration: 8000,
-            });
+            // Show success message with what was extracted
+            if (fieldsUpdated.length > 0) {
+              toast.success(
+                `✅ Extracted: ${fieldsUpdated.join(', ')}. Please review and click 'Add Return' to save.`,
+                { duration: 6000 }
+              );
+            } else {
+              toast.warning('Could not extract data. Please fill the form manually.', { duration: 4000 });
+            }
           } catch (error) {
             console.error('OCR Error:', error);
-            // Dismiss previous toasts
-            toast.dismiss(uploadToastId);
-            toast.dismiss(extractingToastId);
             
-            // Don't show error for timeouts or network issues, just let user fill manually
-            if (error instanceof Error) {
-              if (error.name === 'AbortError') {
-                toast.warning('OCR taking too long. Please fill the form manually.');
-              } else {
-                toast.warning('Could not extract receipt info. Please fill manually.');
-              }
+            // Show simple error message
+            if (error instanceof Error && error.name === 'AbortError') {
+              toast.warning('⏱️ OCR timeout. Please fill manually.', { duration: 4000 });
             } else {
-              toast.warning('Could not extract receipt info. Please fill manually.');
+              toast.warning('⚠️ Could not extract data. Please fill manually.', { duration: 4000 });
             }
           } finally {
             setIsProcessingOCR(false);
@@ -484,11 +482,14 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                 {isProcessingOCR ? "Processing..." : formData.receiptImage ? "Change Receipt" : "Upload Receipt"}
               </Button>
             </div>
-            {formData.receiptImage && (
-              <p className="text-xs text-success">✓ Receipt uploaded - Info auto-extracted</p>
+            {formData.receiptImage && !isProcessingOCR && (
+              <p className="text-xs text-success font-medium">✓ Receipt uploaded successfully</p>
             )}
             {isProcessingOCR && (
-              <p className="text-xs text-muted-foreground">🔍 Extracting receipt information...</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
+                <span>Analyzing receipt...</span>
+              </div>
             )}
           </div>
 
