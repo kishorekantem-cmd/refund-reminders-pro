@@ -143,6 +143,22 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       refundReceived: false,
     });
 
+    // Reset form state
+    setFormData({
+      storeName: "",
+      price: "",
+      receiptImage: "",
+    });
+    setPurchaseDate(undefined);
+    setReturnByDate(undefined);
+    setDateReturned(undefined);
+    
+    // Close dialog after successful submission
+    setOpen(false);
+  };
+
+  const handleCancel = () => {
+    // Allow closing when user explicitly clicks Cancel
     setFormData({
       storeName: "",
       price: "",
@@ -307,15 +323,40 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    // Prevent closing dialog during OCR processing
+    if (!newOpen && isProcessingOCR) {
+      console.log('Preventing dialog close during OCR processing');
+      return;
+    }
+    
+    // Prevent accidental closing if user has entered data or uploaded an image
+    if (!newOpen && (formData.storeName || formData.price || formData.receiptImage)) {
+      console.log('Preventing dialog close - user has entered data');
+      return;
+    }
+    
+    console.log('Dialog open change:', newOpen);
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-md">
           <Plus className="w-4 h-4 mr-2" />
           Add Return
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => {
+        if (isProcessingOCR) {
+          e.preventDefault();
+        }
+      }} onEscapeKeyDown={(e) => {
+        if (isProcessingOCR) {
+          e.preventDefault();
+        }
+      }}>
         <DialogHeader>
           <DialogTitle>Add New Return</DialogTitle>
         </DialogHeader>
@@ -493,9 +534,14 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
             )}
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-            Add Return
-          </Button>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={handleCancel} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1 bg-gradient-primary hover:opacity-90">
+              Add Return
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
