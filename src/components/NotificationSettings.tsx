@@ -16,6 +16,13 @@ export const NotificationSettings = () => {
   }, []);
 
   const handleEnableNotifications = async () => {
+    if (isNative) {
+      // Native app - show instructions to enable in device settings
+      toast.error("Push notifications require device permissions. Go to your device Settings → Apps → ReFundly → Notifications and enable them.", { duration: 8000 });
+      setNotificationStatus("denied");
+      return;
+    }
+    
     const granted = await requestNotificationPermission();
     if (granted) {
       setNotificationStatus("granted");
@@ -23,11 +30,7 @@ export const NotificationSettings = () => {
       await checkAndScheduleNotifications();
     } else {
       setNotificationStatus("denied");
-      if (isNative) {
-        toast.error("Please enable notifications in your device settings for ReFundly app.");
-      } else {
-        toast.error("Notification permission denied. Please enable in browser settings.");
-      }
+      toast.error("Notification permission denied. Please enable in browser settings.");
     }
   };
 
@@ -81,7 +84,7 @@ export const NotificationSettings = () => {
             <BellOff className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               {isNative ? (
-                <>Go to Settings → Apps → ReFundly → Notifications and enable them.</>
+                <>Notifications are blocked. Go to your device Settings → Apps → ReFundly → Notifications and turn them on.</>
               ) : (
                 <>Notifications are blocked. Please enable them in your browser settings.</>
               )}
@@ -89,10 +92,10 @@ export const NotificationSettings = () => {
           </div>
         )}
 
-        {isNative && notificationStatus === "granted" && (
-          <div className="p-3 rounded-lg bg-success/10 text-success text-sm flex items-start gap-2">
+        {isNative && (
+          <div className="p-3 rounded-lg bg-muted text-muted-foreground text-sm flex items-start gap-2">
             <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>App notifications are enabled. You'll receive alerts even when the app is closed.</span>
+            <span>Note: Native push notifications are not yet available in this version. Manual reminders can be set from the home screen.</span>
           </div>
         )}
 

@@ -1,12 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const isNativeApp = (): boolean => {
-  return window.matchMedia('(display-mode: standalone)').matches || 
-         (window.navigator as any).standalone === true ||
-         document.referrer.includes('android-app://');
+  // Check if running in Capacitor
+  return !!(window as any).Capacitor || 
+         window.location.protocol === 'capacitor:' ||
+         window.location.hostname === 'localhost' && (window as any).Capacitor;
 };
 
 export const requestNotificationPermission = async () => {
+  // Check if running in Capacitor native app
+  if (isNativeApp()) {
+    console.log("Running in native app - Web Notification API not available");
+    return false;
+  }
+
   if (!("Notification" in window)) {
     console.log("This browser does not support notifications");
     return false;
