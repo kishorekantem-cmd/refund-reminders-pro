@@ -324,19 +324,12 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    // Prevent closing dialog during OCR processing
-    if (!newOpen && isProcessingOCR) {
-      console.log('Preventing dialog close during OCR processing');
+    // ONLY allow closing via Cancel button or successful submission
+    // Prevent ALL automatic closes to fix Android file picker issue
+    if (!newOpen) {
+      console.log('Preventing automatic dialog close');
       return;
     }
-    
-    // Prevent accidental closing if user has entered data or uploaded an image
-    if (!newOpen && (formData.storeName || formData.price || formData.receiptImage)) {
-      console.log('Preventing dialog close - user has entered data');
-      return;
-    }
-    
-    console.log('Dialog open change:', newOpen);
     setOpen(newOpen);
   };
 
@@ -349,13 +342,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => {
-        if (isProcessingOCR) {
-          e.preventDefault();
-        }
+        // Always prevent closing via clicking outside to fix Android issues
+        e.preventDefault();
       }} onEscapeKeyDown={(e) => {
-        if (isProcessingOCR) {
-          e.preventDefault();
-        }
+        // Always prevent closing via Escape key to fix Android issues
+        e.preventDefault();
       }}>
         <DialogHeader>
           <DialogTitle>Add New Return</DialogTitle>
