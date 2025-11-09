@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Upload, CalendarIcon } from "lucide-react";
+import { Plus, Camera, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ReturnItem } from "./ReturnCard";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 const returnSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Store name must be less than 100 characters"),
@@ -170,162 +171,118 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     setOpen(false);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image is too large. Please use an image smaller than 5MB');
-        e.target.value = '';
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await CapCamera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 60,
+        width: 800,
+        correctOrientation: true,
+      });
+
+      const compressedDataUrl = photo.dataUrl;
+      
+      if (!compressedDataUrl) {
+        toast.error('Failed to capture photo');
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const img = new Image();
-        img.onload = async () => {
+      setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
+      // Extract receipt information using OCR (with error handling)
+      setIsProcessingOCR(true);
+      toast.info('📸 Receipt captured! Extracting information...', { duration: 2000 });
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ imageData: compressedDataUrl }),
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'Failed to extract receipt info');
+        }
+
+        const extractedData = await response.json();
+        console.log('Extracted data:', extractedData);
+
+        let fieldsUpdated = [];
+        
+        if (extractedData.storeName) {
+          setFormData(prev => ({ ...prev, storeName: extractedData.storeName }));
+          fieldsUpdated.push('store');
+        }
+        if (extractedData.amount) {
+          setFormData(prev => ({ ...prev, price: extractedData.amount.toString() }));
+          fieldsUpdated.push('price');
+        }
+        if (extractedData.purchaseDate) {
           try {
-            // Create canvas to resize image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Calculate new dimensions (max 800px for mobile compatibility)
-            let width = img.width;
-            let height = img.height;
-            const maxDimension = 800;
-            
-            if (width > maxDimension || height > maxDimension) {
-              if (width > height) {
-                height = (height / width) * maxDimension;
-                width = maxDimension;
-              } else {
-                width = (width / height) * maxDimension;
-                height = maxDimension;
-              }
+            const [month, day, year] = extractedData.purchaseDate.split('/');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) {
+              setPurchaseDate(date);
+              fieldsUpdated.push('purchase date');
             }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // Draw and compress image
-            ctx?.drawImage(img, 0, 0, width, height);
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-            
-            setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
-            // Extract receipt information using OCR (with error handling)
-            setIsProcessingOCR(true);
-            toast.info('📸 Receipt uploaded! Extracting information...', { duration: 2000 });
-
-            try {
-              const { data: { session } } = await supabase.auth.getSession();
-              
-              // Create abort controller for timeout
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-              
-              const response = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                  },
-                  body: JSON.stringify({ imageData: compressedDataUrl }),
-                  signal: controller.signal,
-                }
-              );
-
-              clearTimeout(timeoutId);
-
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                throw new Error(errorData.error || 'Failed to extract receipt info');
-              }
-
-              const extractedData = await response.json();
-              console.log('Extracted data:', extractedData);
-
-            // Auto-fill form fields
-            let fieldsUpdated = [];
-            
-            if (extractedData.storeName) {
-              setFormData(prev => ({ ...prev, storeName: extractedData.storeName }));
-              fieldsUpdated.push('store');
-            }
-            if (extractedData.amount) {
-              setFormData(prev => ({ ...prev, price: extractedData.amount.toString() }));
-              fieldsUpdated.push('price');
-            }
-            if (extractedData.purchaseDate) {
-              try {
-                const [month, day, year] = extractedData.purchaseDate.split('/');
-                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                if (!isNaN(date.getTime())) {
-                  setPurchaseDate(date);
-                  fieldsUpdated.push('purchase date');
-                }
-              } catch (err) {
-                console.error('Error parsing purchase date:', err);
-              }
-            }
-            if (extractedData.returnByDate) {
-              try {
-                const [month, day, year] = extractedData.returnByDate.split('/');
-                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                if (!isNaN(date.getTime())) {
-                  setReturnByDate(date);
-                  fieldsUpdated.push('return by date');
-                }
-              } catch (err) {
-                console.error('Error parsing return by date:', err);
-              }
-            }
-            
-            // Show success message with what was extracted
-            if (fieldsUpdated.length > 0) {
-              toast.success(
-                `✅ Extracted: ${fieldsUpdated.join(', ')}. Please review and click 'Add Return' to save.`,
-                { duration: 6000 }
-              );
-            } else {
-              toast.warning('Could not extract data. Please fill the form manually.', { duration: 4000 });
-            }
-          } catch (error) {
-            console.error('OCR Error:', error);
-            
-            // Show simple error message
-            if (error instanceof Error && error.name === 'AbortError') {
-              toast.warning('⏱️ OCR timeout. Please fill manually.', { duration: 4000 });
-            } else {
-              toast.warning('⚠️ Could not extract data. Please fill manually.', { duration: 4000 });
-            }
-          } finally {
-            setIsProcessingOCR(false);
+          } catch (err) {
+            console.error('Error parsing purchase date:', err);
           }
-          } catch (error) {
-            console.error('Image processing error:', error);
-            toast.error('Failed to process image. Please try another image.');
-            setFormData(prev => ({ ...prev, receiptImage: '' }));
+        }
+        if (extractedData.returnByDate) {
+          try {
+            const [month, day, year] = extractedData.returnByDate.split('/');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) {
+              setReturnByDate(date);
+              fieldsUpdated.push('return by date');
+            }
+          } catch (err) {
+            console.error('Error parsing return by date:', err);
           }
-        };
-        img.onerror = () => {
-          toast.error('Failed to load image');
-          e.target.value = '';
-        };
-        img.src = reader.result as string;
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read image file');
-        e.target.value = '';
-      };
-      reader.readAsDataURL(file);
+        }
+        
+        if (fieldsUpdated.length > 0) {
+          toast.success(
+            `✅ Extracted: ${fieldsUpdated.join(', ')}. Please review and click 'Add Return' to save.`,
+            { duration: 6000 }
+          );
+        } else {
+          toast.warning('Could not extract data. Please fill the form manually.', { duration: 4000 });
+        }
+      } catch (error) {
+        console.error('OCR Error:', error);
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+          toast.warning('⏱️ OCR timeout. Please fill manually.', { duration: 4000 });
+        } else {
+          toast.warning('⚠️ Could not extract data. Please fill manually.', { duration: 4000 });
+        }
+      } finally {
+        setIsProcessingOCR(false);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      toast.error('Failed to capture photo. Please try again.');
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    // ONLY allow closing via Cancel button or successful submission
-    // Prevent ALL automatic closes to fix Android file picker issue
     if (!newOpen) {
       console.log('Preventing automatic dialog close');
       return;
@@ -492,30 +449,25 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="receipt">Receipt Image (Optional)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="receipt"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageUpload}
-                className="hidden"
-                disabled={isProcessingOCR}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("receipt")?.click()}
-                className="w-full"
-                disabled={isProcessingOCR}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {isProcessingOCR ? "Processing..." : formData.receiptImage ? "Change Receipt" : "Upload Receipt"}
-              </Button>
-            </div>
+            <Label>Receipt Image (Optional)</Label>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTakePhoto}
+              disabled={isProcessingOCR}
+              className="w-full"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              {isProcessingOCR ? 'Processing...' : formData.receiptImage ? 'Retake Photo' : 'Take Photo'}
+            </Button>
             {formData.receiptImage && !isProcessingOCR && (
-              <p className="text-xs text-success font-medium">✓ Receipt uploaded successfully</p>
+              <div className="mt-2">
+                <img
+                  src={formData.receiptImage}
+                  alt="Receipt preview"
+                  className="max-w-full h-auto rounded-md border"
+                />
+              </div>
             )}
             {isProcessingOCR && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
