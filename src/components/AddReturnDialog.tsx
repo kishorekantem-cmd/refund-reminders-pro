@@ -283,11 +283,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      console.log('Preventing automatic dialog close');
-      return;
+    // Only allow opening via trigger button
+    // Closing is handled explicitly via Cancel/Submit buttons
+    if (newOpen) {
+      setOpen(true);
     }
-    setOpen(newOpen);
   };
 
   return (
