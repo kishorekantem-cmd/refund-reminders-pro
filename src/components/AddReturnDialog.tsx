@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,8 @@ interface AddReturnDialogProps {
   onAdd: (item: Omit<ReturnItem, "id">) => void;
 }
 
+const FORM_STORAGE_KEY = 'refundly_form_draft';
+
 export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,6 +42,44 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   const [returnByCalendarOpen, setReturnByCalendarOpen] = useState(false);
   const [returnedCalendarOpen, setReturnedCalendarOpen] = useState(false);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+
+  // Restore form state from localStorage when dialog opens
+  useEffect(() => {
+    if (open) {
+      console.log('[AddReturn] Dialog opened, checking for saved form data');
+      try {
+        const saved = localStorage.getItem(FORM_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          console.log('[AddReturn] Restoring saved form data:', parsed);
+          
+          if (parsed.formData) setFormData(parsed.formData);
+          if (parsed.purchaseDate) setPurchaseDate(new Date(parsed.purchaseDate));
+          if (parsed.returnByDate) setReturnByDate(new Date(parsed.returnByDate));
+          if (parsed.dateReturned) setDateReturned(new Date(parsed.dateReturned));
+          
+          toast.info('Form data restored from previous session');
+        }
+      } catch (error) {
+        console.error('[AddReturn] Error restoring form data:', error);
+      }
+    }
+  }, [open]);
+
+  // Save form state to localStorage whenever it changes
+  useEffect(() => {
+    if (open && (formData.storeName || formData.price || formData.receiptImage)) {
+      const saveData = {
+        formData,
+        purchaseDate: purchaseDate?.toISOString(),
+        returnByDate: returnByDate?.toISOString(),
+        dateReturned: dateReturned?.toISOString(),
+      };
+      console.log('[AddReturn] Saving form data to localStorage:', saveData);
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(saveData));
+    }
+  }, [open, formData, purchaseDate, returnByDate, dateReturned]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,12 +194,20 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
     setReturnByDate(undefined);
     setDateReturned(undefined);
     
+    // Clear saved form data
+    console.log('[AddReturn] Clearing saved form data after successful submission');
+    localStorage.removeItem(FORM_STORAGE_KEY);
+    
     // Close dialog after successful submission
     setOpen(false);
   };
 
   const handleCancel = () => {
-    // Allow closing when user explicitly clicks Cancel
+    console.log('[AddReturn] Cancel button clicked');
+    // Clear saved form data when user cancels
+    localStorage.removeItem(FORM_STORAGE_KEY);
+    
+    // Reset form state
     setFormData({
       storeName: "",
       price: "",
@@ -172,7 +220,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
   };
 
   const handleTakePhoto = async () => {
+    console.log('[AddReturn] Take Photo button clicked');
+    setIsCameraActive(true);
+    
     try {
+      console.log('[AddReturn] Opening camera...');
       const photo = await CapCamera.getPhoto({
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -181,31 +233,38 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         correctOrientation: true,
       });
 
+      console.log('[AddReturn] Photo captured successfully, data URL length:', photo.dataUrl?.length);
+      setIsCameraActive(false);
+
       const compressedDataUrl = photo.dataUrl;
       
       if (!compressedDataUrl) {
+        console.error('[AddReturn] No data URL returned from camera');
         toast.error('Failed to capture photo');
         return;
       }
 
+      console.log('[AddReturn] Setting receipt image in form data');
       setFormData(prev => ({ ...prev, receiptImage: compressedDataUrl }));
+      
       // Extract receipt information using OCR (with error handling)
       setIsProcessingOCR(true);
       toast.info('📸 Receipt captured! Extracting information...', { duration: 2000 });
 
       try {
+        console.log('[AddReturn] Starting OCR processing...');
         const { data: { session } } = await supabase.auth.getSession();
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
         
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-receipt-info`,
+          `https://jiufsfcrebawiiqndwvf.supabase.co/functions/v1/extract-receipt-info`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Authorization': `Bearer ${session?.access_token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZzZmNyZWJhd2lpcW5kd3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3OTY0OTcsImV4cCI6MjA3NjM3MjQ5N30.AJFI1YDTN45MlXuQjF9Z9tIDO-AXJm7YnLWPxg0YNfs'}`,
             },
             body: JSON.stringify({ imageData: compressedDataUrl }),
             signal: controller.signal,
@@ -213,6 +272,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         );
 
         clearTimeout(timeoutId);
+        console.log('[AddReturn] OCR response status:', response.status);
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -266,7 +326,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           toast.warning('Could not extract data. Please fill the form manually.', { duration: 4000 });
         }
       } catch (error) {
-        console.error('OCR Error:', error);
+        console.error('[AddReturn] OCR Error:', error);
         
         if (error instanceof Error && error.name === 'AbortError') {
           toast.warning('⏱️ OCR timeout. Please fill manually.', { duration: 4000 });
@@ -274,15 +334,31 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           toast.warning('⚠️ Could not extract data. Please fill manually.', { duration: 4000 });
         }
       } finally {
+        console.log('[AddReturn] OCR processing completed');
         setIsProcessingOCR(false);
       }
     } catch (error) {
-      console.error('Camera error:', error);
-      toast.error('Failed to capture photo. Please try again.');
+      console.error('[AddReturn] Camera error:', error);
+      setIsCameraActive(false);
+      setIsProcessingOCR(false);
+      
+      if (error instanceof Error) {
+        toast.error(`Camera error: ${error.message}`);
+      } else {
+        toast.error('Failed to capture photo. Please try again.');
+      }
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
+    console.log('[AddReturn] Dialog open state changing to:', newOpen, 'Camera active:', isCameraActive);
+    
+    // Prevent closing the dialog if camera is active or OCR is processing
+    if (!newOpen && (isCameraActive || isProcessingOCR)) {
+      console.log('[AddReturn] Preventing dialog close - camera/OCR in progress');
+      return;
+    }
+    
     // Only allow opening via trigger button
     // Closing is handled explicitly via Cancel/Submit buttons
     if (newOpen) {
@@ -298,13 +374,17 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           Add Return
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => {
-        // Always prevent closing via clicking outside to fix Android issues
-        e.preventDefault();
-      }} onEscapeKeyDown={(e) => {
-        // Always prevent closing via Escape key to fix Android issues
-        e.preventDefault();
-      }}>
+      <DialogContent 
+        className="sm:max-w-[425px]" 
+        onInteractOutside={(e) => {
+          console.log('[AddReturn] Interact outside detected, preventing close');
+          e.preventDefault();
+        }} 
+        onEscapeKeyDown={(e) => {
+          console.log('[AddReturn] Escape key detected, preventing close');
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Add New Return</DialogTitle>
         </DialogHeader>
@@ -454,11 +534,11 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               type="button"
               variant="outline"
               onClick={handleTakePhoto}
-              disabled={isProcessingOCR}
+              disabled={isProcessingOCR || isCameraActive}
               className="w-full"
             >
               <Camera className="w-4 h-4 mr-2" />
-              {isProcessingOCR ? 'Processing...' : formData.receiptImage ? 'Retake Photo' : 'Take Photo'}
+              {isCameraActive ? 'Opening Camera...' : isProcessingOCR ? 'Processing...' : formData.receiptImage ? 'Retake Photo' : 'Take Photo'}
             </Button>
             {formData.receiptImage && !isProcessingOCR && (
               <div className="mt-2">
