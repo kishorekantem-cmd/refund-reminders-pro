@@ -377,12 +377,16 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
       <DialogContent 
         className="sm:max-w-[425px]" 
         onInteractOutside={(e) => {
-          console.log('[AddReturn] Interact outside detected, preventing close');
-          e.preventDefault();
+          if (isCameraActive || isProcessingOCR) {
+            console.log('[AddReturn] Interact outside detected while camera/OCR active, preventing close');
+            e.preventDefault();
+          }
         }} 
         onEscapeKeyDown={(e) => {
-          console.log('[AddReturn] Escape key detected, preventing close');
-          e.preventDefault();
+          if (isCameraActive || isProcessingOCR) {
+            console.log('[AddReturn] Escape key detected while camera/OCR active, preventing close');
+            e.preventDefault();
+          }
         }}
       >
         <DialogHeader>
