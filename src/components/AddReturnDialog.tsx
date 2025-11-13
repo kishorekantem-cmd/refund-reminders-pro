@@ -54,15 +54,25 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
           const parsed = JSON.parse(saved);
           console.log('[AddReturn] Restoring saved form data:', parsed);
           
-          if (parsed.formData) setFormData(parsed.formData);
-          if (parsed.purchaseDate) setPurchaseDate(new Date(parsed.purchaseDate));
-          if (parsed.returnByDate) setReturnByDate(new Date(parsed.returnByDate));
-          if (parsed.dateReturned) setDateReturned(new Date(parsed.dateReturned));
+          // Check if data is stale (older than 24 hours)
+          const saveTime = parsed.timestamp || 0;
+          const isStale = Date.now() - saveTime > 24 * 60 * 60 * 1000;
           
-          toast.info('Form data restored from previous session');
+          if (isStale) {
+            console.log('[AddReturn] Saved data is stale, clearing');
+            localStorage.removeItem(FORM_STORAGE_KEY);
+          } else {
+            if (parsed.formData) setFormData(parsed.formData);
+            if (parsed.purchaseDate) setPurchaseDate(new Date(parsed.purchaseDate));
+            if (parsed.returnByDate) setReturnByDate(new Date(parsed.returnByDate));
+            if (parsed.dateReturned) setDateReturned(new Date(parsed.dateReturned));
+            
+            toast.info('Form data restored from previous session');
+          }
         }
       } catch (error) {
         console.error('[AddReturn] Error restoring form data:', error);
+        localStorage.removeItem(FORM_STORAGE_KEY);
       }
     }
   }, [open]);
@@ -75,6 +85,7 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         purchaseDate: purchaseDate?.toISOString(),
         returnByDate: returnByDate?.toISOString(),
         dateReturned: dateReturned?.toISOString(),
+        timestamp: Date.now(),
       };
       console.log('[AddReturn] Saving form data to localStorage:', saveData);
       localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(saveData));
