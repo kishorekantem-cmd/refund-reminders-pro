@@ -174,7 +174,7 @@ const Index = () => {
     setIsRefreshing(true);
     try {
       await fetchReturns();
-      await checkAndScheduleNotifications();
+      await initializeNotifications();
       toast.success("Refreshed!", { duration: 2000 });
     } catch (error) {
       console.error('Refresh error:', error);
