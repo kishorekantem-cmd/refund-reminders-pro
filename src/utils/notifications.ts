@@ -32,6 +32,12 @@ export const requestNotificationPermission = async () => {
 };
 
 export const checkAndScheduleNotifications = async () => {
+  // Check if running in native app or if Notification API is not available
+  if (isNativeApp() || !("Notification" in window)) {
+    console.log("Notifications not available in this environment");
+    return;
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
