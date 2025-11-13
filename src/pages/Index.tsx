@@ -33,9 +33,14 @@ const Index = () => {
   }, [user]);
 
   const initializeNotifications = async () => {
-    const hasPermission = await requestNotificationPermission();
-    if (hasPermission) {
-      await checkAndScheduleNotifications();
+    try {
+      const hasPermission = await requestNotificationPermission();
+      if (hasPermission) {
+        await checkAndScheduleNotifications();
+      }
+    } catch (error) {
+      console.error('Notification initialization error:', error);
+      // Silently fail - don't block the app
     }
   };
 
