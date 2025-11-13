@@ -91,6 +91,12 @@ export const checkAndScheduleNotifications = async () => {
 };
 
 export const showNotification = (title: string, body: string) => {
+  // Check if running in native app or if Notification API is not available
+  if (isNativeApp() || !("Notification" in window)) {
+    console.log("Notifications not available in this environment");
+    return;
+  }
+
   if (Notification.permission === "granted") {
     const options = {
       body,
