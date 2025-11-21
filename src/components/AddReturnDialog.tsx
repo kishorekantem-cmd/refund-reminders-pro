@@ -405,6 +405,35 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
         </DialogHeader>
         <form id="add-return-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            <Label>Receipt Image (Optional)</Label>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTakePhoto}
+              disabled={isProcessingOCR || isCameraActive}
+              className="w-full"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              {isCameraActive ? 'Opening Camera...' : isProcessingOCR ? 'Processing...' : formData.receiptImage ? 'Retake Photo' : 'Take Photo'}
+            </Button>
+            {formData.receiptImage && !isProcessingOCR && (
+              <div className="mt-2">
+                <img
+                  src={formData.receiptImage}
+                  alt="Receipt preview"
+                  className="max-w-full h-auto rounded-md border"
+                />
+              </div>
+            )}
+            {isProcessingOCR && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
+                <span>Analyzing receipt...</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="storeName">Store Name *</Label>
             <Input
               id="storeName"
@@ -447,7 +476,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     checkDate.setHours(0, 0, 0, 0);
                     return checkDate.getTime() > today.getTime();
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -484,7 +512,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     checkPurchase.setHours(0, 0, 0, 0);
                     return checkDate.getTime() < checkPurchase.getTime();
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -522,7 +549,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
                     return tomorrow;
                   })()
                 }}
-                initialFocus
               />
             </PopoverContent>
           </Popover>
@@ -541,35 +567,6 @@ export const AddReturnDialog = ({ onAdd }: AddReturnDialogProps) => {
               placeholder="0.00"
               required
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Receipt Image (Optional)</Label>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleTakePhoto}
-              disabled={isProcessingOCR || isCameraActive}
-              className="w-full"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {isCameraActive ? 'Opening Camera...' : isProcessingOCR ? 'Processing...' : formData.receiptImage ? 'Retake Photo' : 'Take Photo'}
-            </Button>
-            {formData.receiptImage && !isProcessingOCR && (
-              <div className="mt-2">
-                <img
-                  src={formData.receiptImage}
-                  alt="Receipt preview"
-                  className="max-w-full h-auto rounded-md border"
-                />
-              </div>
-            )}
-            {isProcessingOCR && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
-                <span>Analyzing receipt...</span>
-              </div>
-            )}
           </div>
 
           <div className="flex gap-2 pt-2">
