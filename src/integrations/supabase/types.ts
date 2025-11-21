@@ -38,6 +38,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_tracker: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_shown_date: string
+          notification_type: string
+          return_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_shown_date: string
+          notification_type: string
+          return_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_shown_date?: string
+          notification_type?: string
+          return_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_tracker_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -69,6 +107,9 @@ export type Database = {
           has_receipt: boolean | null
           id: string
           item_name: string
+          last_overdue_notification: string | null
+          last_pending_notification: string | null
+          last_refund_notification: string | null
           notes: string | null
           purchase_date: string
           receipt_image: string | null
@@ -85,6 +126,9 @@ export type Database = {
           has_receipt?: boolean | null
           id?: string
           item_name: string
+          last_overdue_notification?: string | null
+          last_pending_notification?: string | null
+          last_refund_notification?: string | null
           notes?: string | null
           purchase_date: string
           receipt_image?: string | null
@@ -101,6 +145,9 @@ export type Database = {
           has_receipt?: boolean | null
           id?: string
           item_name?: string
+          last_overdue_notification?: string | null
+          last_pending_notification?: string | null
+          last_refund_notification?: string | null
           notes?: string | null
           purchase_date?: string
           receipt_image?: string | null
